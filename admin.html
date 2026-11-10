@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iglesia Asistencia - Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab-active { background-color: #4f46e5; color: white; }
+        .tab-inactive { background-color: transparent; color: #94a3b8; }
+        .tab-inactive:hover { color: white; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased relative">
+
+    <!-- 상단 헤더 -->
+    <header class="bg-slate-900 text-white px-6 py-4 shadow-md flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        <div>
+            <h1 class="text-lg font-bold tracking-tight flex items-center gap-2">
+                <span id="txt-header-title">📊 Panel de Control</span>
+            </h1>
+            <p class="text-xs text-slate-400 mt-1" id="txt-header-sub">Análisis de asistencia y gestión de ausencias</p>
+        </div>
+        
+        <div class="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-3 w-full lg:w-auto">
+            <div class="flex bg-slate-800 rounded-lg p-1 border border-slate-700 w-full sm:w-auto">
+                <button onclick="switchTab('dash')" id="btn-tab-dash" class="tab-active px-4 py-2 text-xs font-bold rounded-md transition w-1/2 sm:w-auto">Resumen General</button>
+                <button onclick="switchTab('dist')" id="btn-tab-dist" class="tab-inactive px-4 py-2 text-xs font-bold rounded-md transition w-1/2 sm:w-auto">Detalle por Distrito</button>
+            </div>
+            <select id="month-selector" onchange="renderAll()" class="bg-slate-800 text-white text-sm font-semibold px-4 py-2.5 rounded-lg border border-slate-700 focus:outline-none w-full sm:w-auto">
+                <option value="10">Octubre 2026</option>
+                <option value="11" selected>Noviembre 2026</option>
+                <option value="12">Diciembre 2026</option>
+            </select>
+            <div class="flex bg-slate-800 rounded-lg p-1 border border-slate-700 w-full sm:w-auto justify-center sm:justify-start">
+                <button onclick="setLang('ES')" id="btn-lang-es" class="px-3 py-1.5 text-xs font-bold rounded-md bg-indigo-500 text-white transition">ES</button>
+                <button onclick="setLang('KO')" id="btn-lang-ko" class="px-3 py-1.5 text-xs font-bold rounded-md text-slate-400 hover:text-white transition">KO</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 콘텐츠 -->
+    <main class="max-w-7xl mx-auto w-full px-4 py-8 space-y-8 flex-grow">
+        <div id="loading-indicator" class="text-center py-12 text-slate-500 font-medium animate-pulse">
+            Cargando datos... / 데이터를 불러오는 중...
+        </div>
+
+        <!-- 뷰 1: 종합 대시보드 -->
+        <div id="view-dash" class="hidden space-y-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-indigo-500 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider" id="txt-avg-sun">Promedio Asistencia (Domingo)</p>
+                        <h2 class="text-4xl font-extrabold text-slate-800 mt-2" id="val-avg-sun">0</h2>
+                        <p class="text-[10px] text-slate-400 mt-1" id="txt-avg-sub1">* Sólo miembros registrados</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500 text-2xl">☀️</div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-sky-500 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider" id="txt-avg-wed">Promedio Asistencia (Miércoles)</p>
+                        <h2 class="text-4xl font-extrabold text-slate-800 mt-2" id="val-avg-wed">0</h2>
+                        <p class="text-[10px] text-slate-400 mt-1" id="txt-avg-sub2">* Sólo miembros registrados</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-sky-50 flex items-center justify-center text-sky-500 text-2xl">🌙</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-slate-50 px-5 py-4 border-b border-slate-100 flex justify-between items-center"><h3 class="font-bold text-slate-800 flex items-center gap-2" id="txt-title-sun">📈 Domingo: Tendencia</h3></div>
+                    <div class="overflow-x-auto"><table class="w-full text-left text-sm" id="table-sun"></table></div>
+                </div>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-slate-50 px-5 py-4 border-b border-slate-100 flex justify-between items-center"><h3 class="font-bold text-slate-800 flex items-center gap-2" id="txt-title-wed">📉 Miércoles: Tendencia</h3></div>
+                    <div class="overflow-x-auto"><table class="w-full text-left text-sm" id="table-wed"></table></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-slate-50 px-5 py-4 border-b border-slate-100"><h3 class="font-bold text-slate-800" id="txt-title-edu">📚 Educación y Reuniones</h3></div>
+                <div class="overflow-x-auto"><table class="w-full text-left text-sm" id="table-edu"></table></div>
+            </div>
+
+            <div>
+                <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2 border-b border-slate-200 pb-2" id="txt-title-abs">🚨 Gestión de Ausencias (Toda la Iglesia)</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5" id="absence-cards-global"></div>
+            </div>
+        </div>
+
+        <!-- 뷰 2: 구역별 상세 매트릭스 -->
+        <div id="view-dist" class="hidden space-y-6">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-5">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2" id="txt-title-dist-detail">📋 Matriz Detallada por Distrito</h2>
+                        <p class="text-xs text-slate-400 mt-1" id="txt-sub-dist-detail">Seleccione un distrito. Haga clic en [✗ 0] para corregir asistencia.</p>
+                    </div>
+                    <select id="district-selector" onchange="renderDistrictView()" class="bg-slate-50 text-slate-700 text-sm font-semibold px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">Seleccione un distrito</option>
+                    </select>
+                </div>
+
+                <div id="table-dist-container" class="overflow-x-auto border border-slate-100 rounded-xl">
+                    <div class="text-center py-12 text-slate-400 text-sm" id="txt-no-dist-selected">Seleccione un distrito arriba.</div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-slate-200 border-dashed hidden" id="dist-absence-section">
+                    <h3 class="text-md font-bold text-slate-800 mb-4 flex items-center gap-2" id="txt-title-dist-abs">🚨 Lista de Ausencias (Distrito Actual)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5" id="absence-cards-dist"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 출석 수정 모달 -->
+    <div id="modal-overlay" class="hidden fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-all">
+            <div class="bg-slate-50 px-5 py-4 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="font-bold text-slate-800" id="modal-title">Asistencia Manual</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
+            </div>
+            <div class="p-6 space-y-5">
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 text-center">
+                    <p class="text-xs text-indigo-400 font-bold uppercase tracking-wider" id="modal-dist-text">DISTRITO</p>
+                    <p class="text-xl font-extrabold text-indigo-700 mt-1" id="modal-name-text">NOMBRE</p>
+                    <p class="text-sm font-semibold text-slate-600 mt-1" id="modal-date-text">DATE</p>
+                </div>
+                <div class="space-y-3">
+                    <label class="flex items-start gap-3 p-4 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition">
+                        <input type="radio" name="att_score" value="1.0" checked class="mt-1 w-4 h-4 text-indigo-600">
+                        <div>
+                            <p class="text-sm font-bold text-slate-800" id="modal-opt1">정상 출석 (1 pt)</p>
+                            <p class="text-xs text-slate-500 mt-0.5" id="modal-opt1-sub">해당 예배에 정상 참석</p>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 p-4 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition">
+                        <input type="radio" name="att_score" value="0.5" class="mt-1 w-4 h-4 text-indigo-600">
+                        <div>
+                            <p class="text-sm font-bold text-slate-800" id="modal-opt2">대체 출석 (0.5 pts)</p>
+                            <p class="text-xs text-slate-500 mt-0.5" id="modal-opt2-sub">다른 날 보강</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            <div class="bg-slate-50 px-5 py-4 border-t border-slate-100 flex justify-end gap-3">
+                <button onclick="closeModal()" class="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-100" id="modal-btn-cancel">Cancelar</button>
+                <button onclick="submitModal()" class="px-5 py-2 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm" id="modal-btn-save">Guardar ✨</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyd0iqNpYSzDFh3s16-ekPCu33Fk1vK_D-x38LvgFkLA98fsUmaTCljYnm9zk0u6Yak/exec";
+
+        let currentLang = 'ES';
+        let currentTab = 'dash'; 
+        let districtData = {};
+        let attendanceLogs = [];
+        let pendingName = ''; let pendingDist = ''; let pendingDate = '';
+
+        const dict = {
+            'ES': {
+                'headerTitle': '📊 Panel de Control', 'headerSub': 'Análisis de asistencia y gestión de ausencias',
+                'tabDash': 'Resumen General', 'tabDist': 'Detalle por Distrito',
+                'avgSun': 'Promedio Asistencia (Domingo)', 'avgWed': 'Promedio Asistencia (Miércoles)',
+                'avgSub': '* Sólo miembros registrados',
+                'titleSun': '📈 Domingo: Tendencia', 'titleWed': '📉 Miércoles: Tendencia',
+                'titleEdu': '📚 Educación y Reuniones',
+                'titleAbs': '🚨 Gestión de Ausencias (Toda la Iglesia)', 'colDist': 'Distrito', 'colAtt': 'Asist.',
+                'colAbs': 'Ausen.', 'colTrend': 'Tendencia', 'colTue': 'Mar', 'colThu': 'Jue', 'colSat': 'Sáb',
+                'trendUp': 'más', 'trendDown': 'menos', 'trendSame': 'Igual',
+                'abs1': 'Ausencia (1 vez)', 'abs1Sub': 'Control: Iglesia',
+                'abs2_7': 'Ausencia Continua (2~7 veces)', 'abs2_7Sub': 'Control: Tribu',
+                'abs8': 'Ausencia Larga (8+ veces)', 'abs8Sub': 'Control: General',
+                'noData': 'Sin datos', 'titleDistDetail': '📋 Matriz Detallada por Distrito',
+                'subDistDetail': 'Haga clic en [✗ 0] para corregir asistencia.',
+                'selectDistDef': 'Seleccione un distrito', 'noDistSelected': 'Seleccione un distrito arriba.',
+                'colName': 'Nombre', 'colSunPct': 'Dom(%)', 'colWedPct': 'Mié(%)', 'colScore': 'Pt',
+                'titleDistAbs': '🚨 Lista de Ausencias (Distrito)', 'unregLabel': '--- No Registrados (Excluidos de estadísticas) ---',
+                'modalTitle': 'Asistencia Manual', 'modalOpt1': 'Asistencia Normal (1 pt)', 'modalOpt1Sub': 'Asistió el día correspondiente',
+                'modalOpt2': 'Día Alternativo (0.5 pts)', 'modalOpt2Sub': 'Recuperación en otro día',
+                'modalCancel': 'Cancelar', 'modalSave': 'Guardar ✨'
+            },
+            'KO': {
+                'headerTitle': '📊 관리자 통합 대시보드', 'headerSub': '교회 전체 예배 참석 및 결석자 추적',
+                'tabDash': '종합 대시보드', 'tabDist': '구역별 상세 매트릭스',
+                'avgSun': '일요일 예배 평균 출석', 'avgWed': '수요일 예배 평균 출석',
+                'avgSub': '* 공식 등록 성도 기준',
+                'titleSun': '📈 일요일: 구역별 출석 트렌드', 'titleWed': '📉 수요일: 구역별 출석 트렌드',
+                'titleEdu': '📚 화/목/토 교육 모임',
+                'titleAbs': '🚨 예배 결석 통합 관리 명단 (교회 전체)', 'colDist': '구역명', 'colAtt': '출석',
+                'colAbs': '결석', 'colTrend': '전주 대비', 'colTue': '화', 'colThu': '목', 'colSat': '토',
+                'trendUp': '명 증가', 'trendDown': '명 감소', 'trendSame': '변동 없음',
+                'abs1': '1회성 결석', 'abs1Sub': '관리: 교회 (최근 1회)',
+                'abs2_7': '2~7회 연속 결석', 'abs2_7Sub': '관리: 지파',
+                'abs8': '8회 이상 장기 결석', 'abs8Sub': '관리: 총회',
+                'noData': '데이터 없음', 'titleDistDetail': '📋 구역별·날짜별 출석 상세 매트릭스',
+                'subDistDetail': '[✗ 0] 뱃지를 누르면 정상(1점)/대체출석(0.5점)을 선택할 수 있습니다.',
+                'selectDistDef': '구역을 선택하세요', 'noDistSelected': '상단에서 조회할 구역을 선택해 주세요.',
+                'colName': '성도 이름', 'colSunPct': '일(%)', 'colWedPct': '수(%)', 'colScore': '점수',
+                'titleDistAbs': '🚨 예배 결석 관리 명단 (현재 구역)', 'unregLabel': '--- 미등록 성도 (통계 및 경고명단 제외) ---',
+                'modalTitle': '수동 출석 입력', 'modalOpt1': '정상 참석 (1점)', 'modalOpt1Sub': '해당 예배에 정상적으로 참석함',
+                'modalOpt2': '대체 출석 (0.5점)', 'modalOpt2Sub': '다른 요일에 보강 참석함',
+                'modalCancel': '취소', 'modalSave': '출석 저장 ✨'
+            }
+        };
+
+        window.addEventListener('DOMContentLoaded', async () => { await loadData(false); });
+
+        async function loadData(keepState = false) {
+            document.getElementById('loading-indicator').classList.remove('hidden');
+            try {
+                const resDist = await fetch(GAS_API_URL);
+                const rawDistData = await resDist.json();
+                
+                // 구역 데이터 정규화 (배열 형태든 객체 형태든 안전하게 변환)
+                districtData = {};
+                for (const dist in rawDistData) {
+                    const val = rawDistData[dist];
+                    if (Array.isArray(val)) {
+                        districtData[dist] = { reg: val, unreg: [] };
+                    } else if (val && typeof val === 'object') {
+                        districtData[dist] = { reg: val.reg || [], unreg: val.unreg || [] };
+                    } else {
+                        districtData[dist] = { reg: [], unreg: [] };
+                    }
+                }
+
+                const resLogs = await fetch(GAS_API_URL + "?action=attendance");
+                attendanceLogs = await resLogs.json();
+
+                if (!keepState) {
+                    const select = document.getElementById('district-selector');
+                    select.innerHTML = `<option value="">${dict[currentLang].selectDistDef}</option>`;
+                    for (const dist in districtData) {
+                        if (districtData[dist].reg.length > 0 || districtData[dist].unreg.length > 0) {
+                            const opt = document.createElement('option');
+                            opt.value = dist; opt.innerText = dist;
+                            select.appendChild(opt);
+                        }
+                    }
+                    switchTab('dash');
+                } else { renderAll(); }
+            } catch (err) { 
+                console.error(err);
+                alert('Error de conexión'); 
+            } finally { 
+                document.getElementById('loading-indicator').classList.add('hidden'); 
+            }
+        }
+
+        function setLang(lang) {
+            currentLang = lang;
+            const btnEs = document.getElementById('btn-lang-es'); const btnKo = document.getElementById('btn-lang-ko');
+            if(lang === 'ES') {
+                btnEs.className = 'px-3 py-1.5 text-xs font-bold rounded-md bg-indigo-500 text-white transition';
+                btnKo.className = 'px-3 py-1.5 text-xs font-bold rounded-md text-slate-400 hover:text-white transition';
+            } else {
+                btnKo.className = 'px-3 py-1.5 text-xs font-bold rounded-md bg-indigo-500 text-white transition';
+                btnEs.className = 'px-3 py-1.5 text-xs font-bold rounded-md text-slate-400 hover:text-white transition';
+            }
+            const select = document.getElementById('district-selector');
+            if (select.options.length > 0 && select.options[0].value === "") { select.options[0].text = dict[currentLang].selectDistDef; }
+            renderAll();
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            const btnDash = document.getElementById('btn-tab-dash'); const btnDist = document.getElementById('btn-tab-dist');
+            const viewDash = document.getElementById('view-dash'); const viewDist = document.getElementById('view-dist');
+            if (tab === 'dash') {
+                btnDash.className = 'tab-active px-4 py-2 text-xs font-bold rounded-md transition w-1/2 sm:w-auto';
+                btnDist.className = 'tab-inactive px-4 py-2 text-xs font-bold rounded-md transition w-1/2 sm:w-auto';
+                viewDash.classList.remove('hidden'); viewDist.classList.add('hidden');
+            } else {
+                btnDist.className = 'tab-active px-4 py-2 text-xs font-bold rounded-md transition w-1/2 sm:w-auto';
+                btnDash.className = 'tab-inactive px-4 py-2 text-xs font-bold rounded-md transition w-1/2 sm:w-auto';
+                viewDist.classList.remove('hidden'); viewDash.classList.add('hidden');
+            }
+            renderAll();
+        }
+
+        function normalizeStr(str) { return !str ? "" : str.toString().trim().toLowerCase().replace(/\s+/g, ''); }
+
+        function isReg(name, dist) {
+            if(!districtData[dist] || !districtData[dist].reg) return false;
+            return districtData[dist].reg.some(n => normalizeStr(n) === normalizeStr(name));
+        }
+
+        function renderAll() {
+            applyTranslations();
+            if (currentTab === 'dash') renderDashboardView();
+            else renderDistrictView();
+        }
+
+        const createAbsCard = (title, subtitle, list, bgBorder, textTitle, bgBadge) => `
+            <div class="bg-white rounded-xl shadow-sm border ${bgBorder} p-5 flex flex-col h-full">
+                <div class="flex justify-between items-start border-b border-slate-100 pb-3 mb-3">
+                    <div>
+                        <h4 class="text-sm font-bold ${textTitle}">${title}</h4>
+                        <p class="text-[11px] text-slate-500 mt-0.5">${subtitle}</p>
+                    </div>
+                    <span class="px-2.5 py-1 ${bgBadge} text-white text-[11px] font-bold rounded-md">${list.length}</span>
+                </div>
+                <ul class="space-y-2 text-[13px] text-slate-700 flex-grow overflow-y-auto max-h-64 pr-2">
+                    ${list.length > 0 ? list.map(n => `<li class="font-semibold px-1 py-1 rounded hover:bg-slate-50">• ${n}</li>`).join('') : `<li class="text-slate-400 text-xs italic px-1">${dict[currentLang].noData}</li>`}
+                </ul>
+            </div>
+        `;
+
+        function renderDashboardView() {
+            const selectedMonth = document.getElementById('month-selector').value;
+            const regMonthLogs = attendanceLogs.filter(log => {
+                if (!log.timestamp) return false;
+                const d = new Date(log.timestamp);
+                if ((d.getMonth() + 1).toString() !== selectedMonth) return false;
+                const distKey = Object.keys(districtData).find(d => normalizeStr(d) === normalizeStr(log.district));
+                if(!distKey) return false;
+                return isReg(log.name, distKey);
+            });
+
+            const dateMap = { sun: new Set(), wed: new Set(), tue: new Set(), thu: new Set(), sat: new Set() };
+            regMonthLogs.forEach(log => {
+                const d = new Date(log.timestamp);
+                const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                const day = d.getDay();
+                if (day === 0) dateMap.sun.add(dateStr); if (day === 3) dateMap.wed.add(dateStr);
+                if (day === 2) dateMap.tue.add(dateStr); if (day === 4) dateMap.thu.add(dateStr); if (day === 6) dateMap.sat.add(dateStr);
+            });
+            const sunDates = Array.from(dateMap.sun).sort(); const wedDates = Array.from(dateMap.wed).sort();
+
+            const calcAvg = (datesArr, dayNum) => {
+                if (datesArr.length === 0) return 0;
+                let totalAtt = 0;
+                datesArr.forEach(dateStr => {
+                    totalAtt += regMonthLogs.filter(log => {
+                        const d = new Date(log.timestamp);
+                        return d.getDay() === dayNum && `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` === dateStr;
+                    }).length;
+                });
+                return Math.round(totalAtt / datesArr.length);
+            };
+
+            document.getElementById('val-avg-sun').innerText = calcAvg(sunDates, 0);
+            document.getElementById('val-avg-wed').innerText = calcAvg(wedDates, 3);
+            const districtNames = Object.keys(districtData).filter(d => districtData[d].reg && districtData[d].reg.length > 0);
+            const t = dict[currentLang];
+
+            const renderTrendTable = (tableId, datesArr) => {
+                let html = `<thead><tr class="bg-slate-100 text-slate-500 uppercase tracking-wider text-[11px]"><th class="p-3 font-bold">${t.colDist}</th><th class="p-3 font-bold text-center">${t.colAtt}</th><th class="p-3 font-bold text-center">${t.colAbs}</th><th class="p-3 font-bold text-right">${t.colTrend}</th></tr></thead><tbody class="divide-y divide-slate-100">`;
+                if (datesArr.length === 0) {
+                    html += `<tr><td colspan="4" class="p-4 text-center text-slate-400 italic">${t.noData}</td></tr></tbody>`;
+                    document.getElementById(tableId).innerHTML = html; return;
+                }
+                const latestDate = datesArr[datesArr.length - 1]; const prevDate = datesArr.length > 1 ? datesArr[datesArr.length - 2] : null;
+                districtNames.forEach(dist => {
+                    const normDist = normalizeStr(dist); const totalMembers = districtData[dist].reg.length;
+                    const distLogs = regMonthLogs.filter(log => normalizeStr(log.district) === normDist);
+                    const getAttCount = (dStr) => distLogs.filter(log => { const d = new Date(log.timestamp); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` === dStr; }).length;
+                    const latestAtt = getAttCount(latestDate); const latestAbs = Math.max(0, totalMembers - latestAtt);
+                    let trendHtml = `<span class="text-slate-400 text-xs">-</span>`;
+                    if (prevDate) {
+                        const prevAtt = getAttCount(prevDate); const diff = latestAtt - prevAtt;
+                        if (diff > 0) trendHtml = `<span class="text-emerald-500 font-bold bg-emerald-50 px-2 py-1 rounded-md text-xs">▲ +${diff} ${t.trendUp}</span>`;
+                        else if (diff < 0) trendHtml = `<span class="text-red-500 font-bold bg-red-50 px-2 py-1 rounded-md text-xs">▼ ${diff} ${t.trendDown}</span>`;
+                        else trendHtml = `<span class="text-slate-400 font-medium bg-slate-50 px-2 py-1 rounded-md text-xs">${t.trendSame}</span>`;
+                    }
+                    html += `<tr class="hover:bg-slate-50/50"><td class="p-3 font-semibold text-slate-700">${dist}</td><td class="p-3 text-center font-bold text-indigo-600">${latestAtt}</td><td class="p-3 text-center text-slate-500">${latestAbs}</td><td class="p-3 text-right">${trendHtml}</td></tr>`;
+                });
+                html += `</tbody>`; document.getElementById(tableId).innerHTML = html;
+            };
+
+            renderTrendTable('table-sun', sunDates); renderTrendTable('table-wed', wedDates);
+
+            let eduHtml = `<thead><tr class="bg-slate-100 text-slate-500 uppercase tracking-wider text-[11px]"><th class="p-3 font-bold">${t.colDist}</th><th class="p-3 font-bold text-center">${t.colTue}</th><th class="p-3 font-bold text-center">${t.colThu}</th><th class="p-3 font-bold text-center">${t.colSat}</th></tr></thead><tbody class="divide-y divide-slate-100">`;
+            districtNames.forEach(dist => {
+                const normDist = normalizeStr(dist); const distLogs = regMonthLogs.filter(log => normalizeStr(log.district) === normDist);
+                const countByDay = (dayNum) => distLogs.filter(log => new Date(log.timestamp).getDay() === dayNum).length;
+                const cTue = countByDay(2); const cThu = countByDay(4); const cSat = countByDay(6);
+                if(cTue > 0 || cThu > 0 || cSat > 0) {
+                    eduHtml += `<tr class="hover:bg-slate-50/50"><td class="p-3 font-semibold text-slate-700">${dist}</td><td class="p-3 text-center ${cTue>0?'font-bold text-indigo-600':'text-slate-300'}">${cTue||'-'}</td><td class="p-3 text-center ${cThu>0?'font-bold text-indigo-600':'text-slate-300'}">${cThu||'-'}</td><td class="p-3 text-center ${cSat>0?'font-bold text-indigo-600':'text-slate-300'}">${cSat||'-'}</td></tr>`;
+                }
+            });
+            eduHtml += `</tbody>`; document.getElementById('table-edu').innerHTML = eduHtml;
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            const pastWorshipDates = [...sunDates, ...wedDates].filter(dStr => dStr <= todayStr).sort();
+
+            const list1 = []; const list2_7 = []; const list8 = [];
+            districtNames.forEach(dist => {
+                const members = districtData[dist].reg;
+                const normDist = normalizeStr(dist);
+                const distLogs = regMonthLogs.filter(log => normalizeStr(log.district) === normDist);
+                members.forEach(name => {
+                    const normName = normalizeStr(name); const userLogs = distLogs.filter(log => normalizeStr(log.name) === normName);
+                    let consecutiveAbsences = 0; let hitAttendance = false;
+                    for (let i = pastWorshipDates.length - 1; i >= 0; i--) {
+                        const dateStr = pastWorshipDates[i];
+                        const attended = userLogs.some(log => { const d = new Date(log.timestamp); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` === dateStr; });
+                        if (!attended) { if (!hitAttendance) consecutiveAbsences++; } else { hitAttendance = true; }
+                    }
+                    const displayTag = `${name} <span class="text-[10px] text-slate-400 font-normal ml-1">(${dist})</span>`;
+                    if (pastWorshipDates.length > 0) {
+                        if (consecutiveAbsences >= 8) list8.push(displayTag);
+                        else if (consecutiveAbsences >= 2 && consecutiveAbsences <= 7) list2_7.push(displayTag);
+                        else if (consecutiveAbsences === 1) list1.push(displayTag);
+                    }
+                });
+            });
+
+            document.getElementById('absence-cards-global').innerHTML = `
+                ${createAbsCard(t.abs1, t.abs1Sub, list1, 'border-amber-200 border-t-4 border-t-amber-500', 'text-amber-700', 'bg-amber-500')}
+                ${createAbsCard(t.abs2_7, t.abs2_7Sub, list2_7, 'border-orange-200 border-t-4 border-t-orange-500', 'text-orange-600', 'bg-orange-500')}
+                ${createAbsCard(t.abs8, t.abs8Sub, list8, 'border-red-200 border-t-4 border-t-red-500', 'text-red-700', 'bg-red-500')}
+            `;
+        }
+
+        // ==========================================
+        // 팝업 모달창 로직
+        // ==========================================
+        function openModal(name, dist, dateStr) {
+            pendingName = name; pendingDist = dist; pendingDate = dateStr;
+            const parts = dateStr.split('-'); const dObj = new Date(parts[0], parts[1] - 1, parts[2]);
+            const dayNames = currentLang === 'ES' ? ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'] : ['일','월','화','수','목','금','토'];
+            document.getElementById('modal-name-text').innerText = name;
+            document.getElementById('modal-dist-text').innerText = dist;
+            document.getElementById('modal-date-text').innerText = `${parts[1]}/${parts[2]} (${dayNames[dObj.getDay()]})`;
+            document.getElementById('modal-overlay').classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('modal-overlay').classList.add('hidden'); }
+
+        async function submitModal() {
+            closeModal(); document.getElementById('loading-indicator').classList.remove('hidden');
+            const scoreVal = document.querySelector('input[name="att_score"]:checked').value;
+            const methodStr = scoreVal === "1.0" ? "Presencial" : "Alternativo";
+            try {
+                const response = await fetch(GAS_API_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ district: pendingDist, name: pendingName, method: methodStr, score: scoreVal, manualDate: pendingDate })
+                });
+                const result = await response.json();
+                if (result.success) { await loadData(true); } 
+                else { alert('Error: ' + result.message); document.getElementById('loading-indicator').classList.add('hidden'); }
+            } catch (e) { alert('Error de red'); document.getElementById('loading-indicator').classList.add('hidden'); }
+        }
+
+        // ==========================================
+        // 구역 상세 매트릭스 렌더링
+        // ==========================================
+        function renderDistrictView() {
+            const t = dict[currentLang];
+            const select = document.getElementById('district-selector');
+            const selectedDist = select.value;
+            const selectedMonthStr = document.getElementById('month-selector').value;
+            const container = document.getElementById('table-dist-container');
+            const distAbsSection = document.getElementById('dist-absence-section');
+
+            if (!selectedDist || !districtData[selectedDist]) {
+                container.innerHTML = `<div class="text-center py-12 text-slate-400 text-sm">${t.noDistSelected}</div>`;
+                distAbsSection.classList.add('hidden'); return;
+            }
+
+            distAbsSection.classList.remove('hidden');
+            const monthLogs = attendanceLogs.filter(log => {
+                if (!log.timestamp) return false;
+                return (new Date(log.timestamp).getMonth() + 1).toString() === selectedMonthStr;
+            });
+            const normSelectedDist = normalizeStr(selectedDist);
+            const distLogs = monthLogs.filter(log => normalizeStr(log.district) === normSelectedDist);
+
+            const dateSet = new Set();
+            const year = 2026; const monthInt = parseInt(selectedMonthStr);
+            const daysInMonth = new Date(year, monthInt, 0).getDate();
+            for(let i = 1; i <= daysInMonth; i++) {
+                const day = new Date(year, monthInt - 1, i).getDay();
+                if (day === 0 || day === 2 || day === 3 || day === 4) dateSet.add(`${year}-${String(monthInt).padStart(2,'0')}-${String(i).padStart(2,'0')}`);
+            }
+            const sortedDates = Array.from(dateSet).sort();
+            
+            const regMembers = districtData[selectedDist].reg || [];
+            const unregMembers = districtData[selectedDist].unreg || [];
+
+            if (regMembers.length === 0 && unregMembers.length === 0) {
+                container.innerHTML = `<div class="text-center py-12 text-slate-400 text-sm">${t.noData}</div>`; return;
+            }
+
+            const dayNames = currentLang === 'ES' ? ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'] : ['일', '월', '화', '수', '목', '금', '토'];
+            let totalSundays = 0; let totalWednesdays = 0; const worshipDates = [];
+            sortedDates.forEach(dateStr => {
+                const dObj = new Date(dateStr.split('-')[0], dateStr.split('-')[1] - 1, dateStr.split('-')[2]);
+                if (dObj.getDay() === 0) { totalSundays++; worshipDates.push(dateStr); }
+                if (dObj.getDay() === 3) { totalWednesdays++; worshipDates.push(dateStr); }
+            });
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            const pastWorshipDates = worshipDates.filter(dStr => dStr <= todayStr);
+
+            let html = `<table class="w-full text-left border-collapse min-w-full"><thead><tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200"><th class="p-3.5 font-semibold sticky left-0 bg-slate-50 z-10">${t.colName}</th><th class="p-3.5 font-semibold text-center text-indigo-600">${t.colSunPct}</th><th class="p-3.5 font-semibold text-center text-sky-600">${t.colWedPct}</th><th class="p-3.5 font-semibold text-center">${t.colScore}</th>`;
+            sortedDates.forEach(dateStr => {
+                const dObj = new Date(dateStr.split('-')[0], dateStr.split('-')[1] - 1, dateStr.split('-')[2]);
+                html += `<th class="p-3.5 font-semibold text-center whitespace-nowrap">${dateStr.split('-')[1]}/${dateStr.split('-')[2]} (${dayNames[dObj.getDay()]})</th>`;
+            });
+            html += `</tr></thead><tbody class="text-sm divide-y divide-slate-100">`;
+
+            const list1 = []; const list2_7 = []; const list8 = [];
+
+            const renderRows = (memberList, isUnregSection) => {
+                memberList.forEach(name => {
+                    const normName = normalizeStr(name); const userLogs = distLogs.filter(log => normalizeStr(log.name) === normName);
+                    let attendedSundays = 0; let attendedWednesdays = 0; let totalScore = 0; 
+                    sortedDates.forEach(dateStr => {
+                        const dObj = new Date(dateStr.split('-')[0], dateStr.split('-')[1] - 1, dateStr.split('-')[2]);
+                        const matchedLog = userLogs.find(log => { const d = new Date(log.timestamp); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` === dateStr; });
+                        if (matchedLog) { 
+                            if (dObj.getDay() === 0) attendedSundays++; 
+                            if (dObj.getDay() === 3) attendedWednesdays++; 
+                            totalScore += (Number(matchedLog.score) || 0);
+                        }
+                    });
+                    const sunPercent = totalSundays > 0 ? Math.round((attendedSundays / totalSundays) * 100) + '%' : '-';
+                    const wedPercent = totalWednesdays > 0 ? Math.round((attendedWednesdays / totalWednesdays) * 100) + '%' : '-';
+                    
+                    const rowClass = isUnregSection ? 'bg-slate-50/40 opacity-70' : 'hover:bg-slate-50/70 transition';
+                    const nameColor = isUnregSection ? 'text-slate-500' : 'text-slate-800';
+
+                    html += `<tr class="${rowClass}"><td class="p-3.5 font-medium ${nameColor} sticky left-0 bg-white z-10 shadow-sm">${name}</td><td class="p-3.5 text-center font-bold text-indigo-600">${sunPercent}</td><td class="p-3.5 text-center font-bold text-sky-600">${wedPercent}</td><td class="p-3.5 text-center font-extrabold ${nameColor}">${totalScore} </td>`;
+
+                    sortedDates.forEach(dateStr => {
+                        const matchedLog = userLogs.find(log => { const d = new Date(log.timestamp); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` === dateStr; });
+                        if (matchedLog) {
+                            const scoreVal = Number(matchedLog.score);
+                            const badgeColor = scoreVal === 0.5 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700';
+                            html += `<td class="p-3.5 text-center"><span class="px-2 py-1 text-xs font-bold rounded-lg ${badgeColor}">✓ ${scoreVal}</span></td>`;
+                        } else {
+                            html += `<td class="p-3.5 text-center"><button onclick="openModal('${name}', '${selectedDist}', '${dateStr}')" class="px-2 py-1 text-xs font-bold rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white hover:shadow-md transition-all cursor-pointer transform active:scale-95">✗ 0</button></td>`;
+                        }
+                    });
+                    html += `</tr>`;
+
+                    if(!isUnregSection) {
+                        let consecutiveAbsences = 0; let hitAttendance = false;
+                        for (let i = pastWorshipDates.length - 1; i >= 0; i--) {
+                            const dateStr = pastWorshipDates[i];
+                            const attended = userLogs.some(log => { const d = new Date(log.timestamp); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` === dateStr; });
+                            if (!attended) { if (!hitAttendance) consecutiveAbsences++; } else { hitAttendance = true; }
+                        }
+                        if (pastWorshipDates.length > 0) {
+                            if (consecutiveAbsences >= 8) list8.push(name);
+                            else if (consecutiveAbsences >= 2 && consecutiveAbsences <= 7) list2_7.push(name);
+                            else if (consecutiveAbsences === 1) list1.push(name);
+                        }
+                    }
+                });
+            };
+
+            renderRows(regMembers, false);
+
+            if(unregMembers.length > 0) {
+                const colSpan = 4 + sortedDates.length;
+                html += `<tr class="bg-slate-200/50"><td colspan="${colSpan}" class="p-3.5 text-center text-xs font-bold text-slate-500">${t.unregLabel}</td></tr>`;
+                renderRows(unregMembers, true);
+            }
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+
+            document.getElementById('absence-cards-dist').innerHTML = `
+                ${createAbsCard(t.abs1, t.abs1Sub, list1, 'border-amber-200 border-t-4 border-t-amber-500', 'text-amber-700', 'bg-amber-500')}
+                ${createAbsCard(t.abs2_7, t.abs2_7Sub, list2_7, 'border-orange-200 border-t-4 border-t-orange-500', 'text-orange-600', 'bg-orange-500')}
+                ${createAbsCard(t.abs8, t.abs8Sub, list8, 'border-red-200 border-t-4 border-t-red-500', 'text-red-700', 'bg-red-500')}
+            `;
+        }
+
+        function applyTranslations() {
+            const t = dict[currentLang];
+            document.getElementById('txt-header-title').innerText = t.headerTitle; document.getElementById('txt-header-sub').innerText = t.headerSub;
+            document.getElementById('btn-tab-dash').innerText = t.tabDash; document.getElementById('btn-tab-dist').innerText = t.tabDist;
+            document.getElementById('txt-avg-sun').innerText = t.avgSun; document.getElementById('txt-avg-sub1').innerText = t.avgSub;
+            document.getElementById('txt-avg-wed').innerText = t.avgWed; document.getElementById('txt-avg-sub2').innerText = t.avgSub;
+            document.getElementById('txt-title-sun').innerText = t.titleSun; document.getElementById('txt-title-wed').innerText = t.titleWed;
+            document.getElementById('txt-title-edu').innerText = t.titleEdu; document.getElementById('txt-title-abs').innerText = t.titleAbs;
+            document.getElementById('txt-title-dist-detail').innerText = t.titleDistDetail; document.getElementById('txt-sub-dist-detail').innerText = t.subDistDetail;
+            const noDistEl = document.getElementById('txt-no-dist-selected'); if(noDistEl) noDistEl.innerText = t.noDistSelected;
+            const distAbsTitle = document.getElementById('txt-title-dist-abs'); if (distAbsTitle) distAbsTitle.innerHTML = `🚨 ${t.titleDistAbs}`;
+            document.getElementById('modal-title').innerText = t.modalTitle; document.getElementById('modal-opt1').innerText = t.modalOpt1;
+            document.getElementById('modal-opt1-sub').innerText = t.modalOpt1Sub; document.getElementById('modal-opt2').innerText = t.modalOpt2;
+            document.getElementById('modal-opt2-sub').innerText = t.modalOpt2Sub; document.getElementById('modal-btn-cancel').innerText = t.modalCancel;
+            document.getElementById('modal-btn-save').innerText = t.modalSave;
+        }
+    </script>
+</body>
+</html>
