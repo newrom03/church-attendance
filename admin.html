@@ -265,8 +265,12 @@
                     }
                     switchTab('dash');
                 } else { renderAll(); }
-            } catch (err) { alert('Error de conexión'); } 
-            finally { document.getElementById('loading-indicator').classList.add('hidden'); }
+            } catch (err) { 
+                console.error(err);
+                alert('Error de conexión'); 
+            } finally { 
+                document.getElementById('loading-indicator').classList.add('hidden'); 
+            }
         }
 
         function setLang(lang) {
@@ -344,8 +348,10 @@
             for (const dist in districtData) {
                 if (districtData[dist].reg) totalRegisteredCount += districtData[dist].reg.length;
             }
-            document.getElementById('total-reg-count').innerText = totalRegisteredCount;
-            document.getElementById('total-reg-count2').innerText = totalRegisteredCount;
+            const regCountEl1 = document.getElementById('total-reg-count');
+            const regCountEl2 = document.getElementById('total-reg-count2');
+            if (regCountEl1) regCountEl1.innerText = totalRegisteredCount;
+            if (regCountEl2) regCountEl2.innerText = totalRegisteredCount;
 
             const dateMap = { sun: new Set(), wed: new Set(), tue: new Set(), thu: new Set(), sat: new Set() };
             regMonthLogs.forEach(log => {
@@ -372,16 +378,22 @@
             const avgSun = calcAvg(sunDates, 0);
             const avgWed = calcAvg(wedDates, 3);
 
-            document.getElementById('val-avg-sun').innerText = avgSun;
-            document.getElementById('val-avg-sun-pct').innerText = totalRegisteredCount > 0 ? `${Math.round((avgSun / totalRegisteredCount) * 100)}%` : '0%';
-            
-            document.getElementById('val-avg-wed').innerText = avgWed;
-            document.getElementById('val-avg-wed-pct').innerText = totalRegisteredCount > 0 ? `${Math.round((avgWed / totalRegisteredCount) * 100)}%` : '0%';
+            const valSunEl = document.getElementById('val-avg-sun');
+            const valSunPctEl = document.getElementById('val-avg-sun-pct');
+            if (valSunEl) valSunEl.innerText = avgSun;
+            if (valSunPctEl) valSunPctEl.innerText = totalRegisteredCount > 0 ? `${Math.round((avgSun / totalRegisteredCount) * 100)}%` : '0%';
+
+            const valWedEl = document.getElementById('val-avg-wed');
+            const valWedPctEl = document.getElementById('val-avg-wed-pct');
+            if (valWedEl) valWedEl.innerText = avgWed;
+            if (valWedPctEl) valWedPctEl.innerText = totalRegisteredCount > 0 ? `${Math.round((avgWed / totalRegisteredCount) * 100)}%` : '0%';
 
             // 📈 세련된 SVG 꺾은선(Line Chart) 그래프 렌더링 함수
             const renderSvgLineChart = (containerId, datesArr, dayNum, infoSpanId, lineColor) => {
                 const container = document.getElementById(containerId);
                 const infoSpan = document.getElementById(infoSpanId);
+
+                if (!container || !infoSpan) return;
 
                 if (datesArr.length === 0) {
                     container.innerHTML = `<div class="text-xs text-slate-400 italic text-center py-4">No data</div>`;
@@ -431,22 +443,17 @@
 
                 let svg = `<svg viewBox="0 0 ${width} ${height}" class="w-full h-full overflow-visible">`;
                 
-                // 배경 그리드 라인
                 svg += `<line x1="${paddingLeft}" y1="${getY(maxVal/2)}" x2="${width - paddingRight}" y2="${getY(maxVal/2)}" stroke="#f1f5f9" stroke-dasharray="3 3" stroke-width="1" />`;
                 svg += `<line x1="${paddingLeft}" y1="${getY(0)}" x2="${width - paddingRight}" y2="${getY(0)}" stroke="#e2e8f0" stroke-width="1" />`;
 
-                // 꺾은선 경로
                 if (counts.length > 1) {
                     svg += `<polyline fill="none" stroke="${lineColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="${points}" />`;
                 }
 
-                // 데이터 점(dot) 및 텍스트 레이블
                 counts.forEach((c, i) => {
                     const cx = getX(i); const cy = getY(c.count);
                     svg += `<circle cx="${cx}" cy="${cy}" r="4" fill="#ffffff" stroke="${lineColor}" stroke-width="2.5" />`;
-                    // 값 표시
                     svg += `<text x="${cx}" y="${cy - 8}" font-size="10" font-weight="bold" fill="#334155" text-anchor="middle">${c.count}</text>`;
-                    // 날짜 표시
                     svg += `<text x="${cx}" y="${height - 2}" font-size="9" fill="#94a3b8" text-anchor="middle">${c.label}</text>`;
                 });
 
@@ -467,10 +474,12 @@
                     latestDateStr = ` (${p[1]}/${p[2]})`;
                 }
                 
-                if (tableId === 'table-sun') {
-                    document.getElementById('txt-title-sun').innerHTML = `📈 Domingo: Tendencia${latestDateStr}`;
-                } else {
-                    document.getElementById('txt-title-wed').innerHTML = `📉 Miércoles: Tendencia${latestDateStr}`;
+                const titleSunEl = document.getElementById('txt-title-sun');
+                const titleWedEl = document.getElementById('txt-title-wed');
+                if (tableId === 'table-sun' && titleSunEl) {
+                    titleSunEl.innerHTML = `📈 Domingo: Tendencia${latestDateStr}`;
+                } else if (tableId === 'table-wed' && titleWedEl) {
+                    titleWedEl.innerHTML = `📉 Miércoles: Tendencia${latestDateStr}`;
                 }
 
                 let html = `<thead><tr class="bg-slate-100 text-slate-500 uppercase tracking-wider text-[11px]"><th class="p-3 font-bold">${t.colDist}</th><th class="p-3 font-bold text-center">${t.colAtt}</th><th class="p-3 font-bold text-center">${t.colAbs}</th><th class="p-3 font-bold text-right">${t.colTrend}</th></tr></thead><tbody class="divide-y divide-slate-100">`;
