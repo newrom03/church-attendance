@@ -50,21 +50,36 @@
         <!-- 뷰 1: 종합 대시보드 -->
         <div id="view-dash" class="hidden space-y-8">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-indigo-500 flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider" id="txt-avg-sun">Promedio Asistencia (Domingo)</p>
-                        <h2 class="text-4xl font-extrabold text-slate-800 mt-2" id="val-avg-sun">0</h2>
-                        <p class="text-[10px] text-slate-400 mt-1" id="txt-avg-sub1">* Sólo miembros registrados</p>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-indigo-500 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider" id="txt-avg-sun">Promedio Asistencia (Domingo)</p>
+                            <h2 class="text-4xl font-extrabold text-slate-800 mt-2" id="val-avg-sun">0</h2>
+                            <p class="text-[10px] text-slate-400 mt-1" id="txt-avg-sub1">* Sólo miembros registrados</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500 text-2xl">☀️</div>
                     </div>
-                    <div class="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500 text-2xl">☀️</div>
+                    <!-- 일요일 예배별 추이 그래프 영역 -->
+                    <div class="pt-3 border-t border-slate-100">
+                        <p class="text-xs font-bold text-slate-500 mb-2">📈 예배별 전체 출석 추이 (일요일)</p>
+                        <div id="chart-sun-container" class="flex items-end gap-2 h-16 pt-2 overflow-x-auto"></div>
+                    </div>
                 </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-sky-500 flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider" id="txt-avg-wed">Promedio Asistencia (Miércoles)</p>
-                        <h2 class="text-4xl font-extrabold text-slate-800 mt-2" id="val-avg-wed">0</h2>
-                        <p class="text-[10px] text-slate-400 mt-1" id="txt-avg-sub2">* Sólo miembros registrados</p>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-sky-500 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider" id="txt-avg-wed">Promedio Asistencia (Miércoles)</p>
+                            <h2 class="text-4xl font-extrabold text-slate-800 mt-2" id="val-avg-wed">0</h2>
+                            <p class="text-[10px] text-slate-400 mt-1" id="txt-avg-sub2">* Sólo miembros registrados</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-full bg-sky-50 flex items-center justify-center text-sky-500 text-2xl">🌙</div>
                     </div>
-                    <div class="w-12 h-12 rounded-full bg-sky-50 flex items-center justify-center text-sky-500 text-2xl">🌙</div>
+                    <!-- 수요일 예배별 추이 그래프 영역 -->
+                    <div class="pt-3 border-t border-slate-100">
+                        <p class="text-xs font-bold text-slate-500 mb-2">📉 예배별 전체 출석 추이 (수요일)</p>
+                        <div id="chart-wed-container" class="flex items-end gap-2 h-16 pt-2 overflow-x-auto"></div>
+                    </div>
                 </div>
             </div>
 
@@ -178,7 +193,7 @@
                 'noData': 'Sin datos', 'titleDistDetail': '📋 Matriz Detallada por Distrito',
                 'subDistDetail': 'Haga clic en [✗ 0] para corregir asistencia.',
                 'selectDistDef': 'Seleccione un distrito', 'noDistSelected': 'Seleccione un distrito arriba.',
-                'colName': 'Nombre', 'colSunPct': 'Dom(%)', 'colWedPct': 'Mié(%)', 'colScore': 'Pt',
+                'colName': 'Nombre', 'colSunCount': 'Dom(명)', 'colWedCount': 'Mié(명)', 'colScore': 'Pt',
                 'titleDistAbs': '🚨 Lista de Ausencias (Distrito)', 'unregLabel': '--- No Registrados (Excluidos de estadísticas) ---',
                 'totalLabel': 'TOTAL',
                 'modalTitle': 'Asistencia Manual', 'modalOpt1': 'Asistencia Normal (1 pt)', 'modalOpt1Sub': 'Asistió el día correspondiente',
@@ -201,7 +216,7 @@
                 'noData': '데이터 없음', 'titleDistDetail': '📋 구역별·날짜별 출석 상세 매트릭스',
                 'subDistDetail': '[✗ 0] 뱃지를 누르면 정상(1점)/대체출석(0.5점)을 선택할 수 있습니다.',
                 'selectDistDef': '구역을 선택하세요', 'noDistSelected': '상단에서 조회할 구역을 선택해 주세요.',
-                'colName': '성도 이름', 'colSunPct': '일(%)', 'colWedPct': '수(%)', 'colScore': '점수',
+                'colName': '성도 이름', 'colSunCount': '일(참석)', 'colWedCount': '수(참석)', 'colScore': '점수',
                 'titleDistAbs': '🚨 예배 결석 관리 명단 (현재 구역)', 'unregLabel': '--- 미등록 성도 (통계 및 경고명단 제외) ---',
                 'totalLabel': 'TOTAL (총합)',
                 'modalTitle': '수동 출석 입력', 'modalOpt1': '정상 참석 (1점)', 'modalOpt1Sub': '해당 예배에 정상적으로 참석함',
@@ -338,6 +353,56 @@
 
             document.getElementById('val-avg-sun').innerText = calcAvg(sunDates, 0);
             document.getElementById('val-avg-wed').innerText = calcAvg(wedDates, 3);
+
+            // 📊 예배별 전체 출석 추이 그래프 렌더링 함수
+            const renderMiniChart = (containerId, datesArr, dayNum, colorClass) => {
+                const container = document.getElementById(containerId);
+                if (datesArr.length === 0) {
+                    container.innerHTML = `<span class="text-xs text-slate-400 italic">No data</span>`;
+                    return;
+                }
+                let counts = datesArr.map(dStr => {
+                    return {
+                        date: dStr,
+                        count: regMonthLogs.filter(log => {
+                            const d = new Date(log.timestamp);
+                            return d.getDay() === dayNum && `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` === dStr;
+                        }).length
+                    };
+                });
+                const maxCount = Math.max(...counts.map(c => c.count), 1);
+                
+                let html = '';
+                counts.forEach((item, idx) => {
+                    const heightPercent = Math.max(Math.round((item.count / maxCount) * 100), 15);
+                    const p = item.date.split('-');
+                    const label = `${p[1]}/${p[2]}`;
+                    
+                    // 상승/하락 비교
+                    let diffBadge = '';
+                    if (idx > 0) {
+                        const diff = item.count - counts[idx-1].count;
+                        if (diff > 0) diffBadge = `<span class="text-[9px] text-emerald-600 font-bold">▲+${diff}</span>`;
+                        else if (diff < 0) diffBadge = `<span class="text-[9px] text-red-500 font-bold">▼${diff}</span>`;
+                    }
+
+                    html += `
+                        <div class="flex flex-col items-center flex-1 h-full justify-end group relative">
+                            <div class="text-[10px] font-bold text-slate-600 mb-1">${item.count}</div>
+                            <div class="w-full max-w-[28px] ${colorClass} rounded-t transition-all duration-300 hover:opacity-80" style="height: ${heightPercent}%;"></div>
+                            <div class="text-[9px] text-slate-400 mt-1 whitespace-nowrap">${label}</div>
+                            <div class="absolute -top-6 hidden group-hover:block bg-slate-800 text-white text-[9px] px-1.5 py-0.5 rounded shadow whitespace-nowrap z-20">
+                                ${label}: ${item.count}명 ${diffBadge}
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            };
+
+            renderMiniChart('chart-sun-container', sunDates, 0, 'bg-indigo-500');
+            renderMiniChart('chart-wed-container', wedDates, 3, 'bg-sky-500');
+
             const districtNames = Object.keys(districtData).filter(d => districtData[d].reg && districtData[d].reg.length > 0);
             const t = dict[currentLang];
 
@@ -364,31 +429,16 @@
                 let sumAtt = 0; let sumAbs = 0;
 
                 districtNames.forEach(dist => {
-                    // 🔥 오직 공식 등록 성도(reg) 수 기준 및 reg 성도의 출석만 집계
-                    const regMembers = districtData[dist].reg || [];
-                    const totalMembers = regMembers.length;
-                    const normDist = normalizeStr(dist);
-                    
-                    const distRegLogs = regMonthLogs.filter(log => normalizeStr(log.district) === normDist);
-                    const getRegAttCount = (dStr) => {
-                        return regMembers.filter(memberName => {
-                            const normName = normalizeStr(memberName);
-                            return distRegLogs.some(log => {
-                                const d = new Date(log.timestamp);
-                                const logDateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-                                return normalizeStr(log.name) === normName && logDateStr === dStr;
-                            });
-                        }).length;
-                    };
-
-                    const latestAtt = getRegAttCount(latestDate); 
-                    const latestAbs = Math.max(0, totalMembers - latestAtt);
+                    const normDist = normalizeStr(dist); const totalMembers = districtData[dist].reg.length;
+                    const distLogs = regMonthLogs.filter(log => normalizeStr(log.district) === normDist);
+                    const getAttCount = (dStr) => distLogs.filter(log => { const d = new Date(log.timestamp); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` === dStr; }).length;
+                    const latestAtt = getAttCount(latestDate); const latestAbs = Math.max(0, totalMembers - latestAtt);
                     
                     sumAtt += latestAtt; sumAbs += latestAbs;
 
                     let trendHtml = `<span class="text-slate-400 text-xs">-</span>`;
                     if (prevDate) {
-                        const prevAtt = getRegAttCount(prevDate); const diff = latestAtt - prevAtt;
+                        const prevAtt = getAttCount(prevDate); const diff = latestAtt - prevAtt;
                         if (diff > 0) trendHtml = `<span class="text-emerald-500 font-bold bg-emerald-50 px-2 py-1 rounded-md text-xs">▲ +${diff} ${t.trendUp}</span>`;
                         else if (diff < 0) trendHtml = `<span class="text-red-500 font-bold bg-red-50 px-2 py-1 rounded-md text-xs">▼ ${diff} ${t.trendDown}</span>`;
                         else trendHtml = `<span class="text-slate-400 font-medium bg-slate-50 px-2 py-1 rounded-md text-xs">${t.trendSame}</span>`;
@@ -473,6 +523,9 @@
             } catch (e) { alert('Error de red'); document.getElementById('loading-indicator').classList.add('hidden'); }
         }
 
+        // ==========================================
+        // 구역 상세 매트릭스 렌더링 (퍼센트 -> 총 참석 횟수/인원수로 변경)
+        // ==========================================
         function renderDistrictView() {
             const t = dict[currentLang];
             const select = document.getElementById('district-selector');
@@ -511,17 +564,16 @@
             }
 
             const dayNames = currentLang === 'ES' ? ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'] : ['일', '월', '화', '수', '목', '금', '토'];
-            let totalSundays = 0; let totalWednesdays = 0; const worshipDates = [];
+            const worshipDates = [];
             sortedDates.forEach(dateStr => {
                 const dObj = new Date(dateStr.split('-')[0], dateStr.split('-')[1] - 1, dateStr.split('-')[2]);
-                if (dObj.getDay() === 0) { totalSundays++; worshipDates.push(dateStr); }
-                if (dObj.getDay() === 3) { totalWednesdays++; worshipDates.push(dateStr); }
+                if (dObj.getDay() === 0 || dObj.getDay() === 3) worshipDates.push(dateStr);
             });
 
             const todayStr = new Date().toISOString().split('T')[0];
             const pastWorshipDates = worshipDates.filter(dStr => dStr <= todayStr);
 
-            let html = `<table class="w-full text-left border-collapse min-w-full"><thead><tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200"><th class="p-3.5 font-semibold sticky left-0 bg-slate-50 z-10">${t.colName}</th><th class="p-3.5 font-semibold text-center text-indigo-600">${t.colSunPct}</th><th class="p-3.5 font-semibold text-center text-sky-600">${t.colWedPct}</th><th class="p-3.5 font-semibold text-center">${t.colScore}</th>`;
+            let html = `<table class="w-full text-left border-collapse min-w-full"><thead><tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200"><th class="p-3.5 font-semibold sticky left-0 bg-slate-50 z-10">${t.colName}</th><th class="p-3.5 font-semibold text-center text-indigo-600">${t.colSunCount}</th><th class="p-3.5 font-semibold text-center text-sky-600">${t.colWedCount}</th><th class="p-3.5 font-semibold text-center">${t.colScore}</th>`;
             sortedDates.forEach(dateStr => {
                 const dObj = new Date(dateStr.split('-')[0], dateStr.split('-')[1] - 1, dateStr.split('-')[2]);
                 html += `<th class="p-3.5 font-semibold text-center whitespace-nowrap">${dateStr.split('-')[1]}/${dateStr.split('-')[2]} (${dayNames[dObj.getDay()]})</th>`;
@@ -543,13 +595,15 @@
                             totalScore += (Number(matchedLog.score) || 0);
                         }
                     });
-                    const sunPercent = totalSundays > 0 ? Math.round((attendedSundays / totalSundays) * 100) + '%' : '-';
-                    const wedPercent = totalWednesdays > 0 ? Math.round((attendedWednesdays / totalWednesdays) * 100) + '%' : '-';
+                    
+                    // 퍼센트 대신 총 참석 횟수(회) 표시
+                    const sunCountText = `${attendedSundays}회`;
+                    const wedCountText = `${attendedWednesdays}회`;
                     
                     const rowClass = isUnregSection ? 'bg-slate-50/40 opacity-70' : 'hover:bg-slate-50/70 transition';
                     const nameColor = isUnregSection ? 'text-slate-500' : 'text-slate-800';
 
-                    html += `<tr class="${rowClass}"><td class="p-3.5 font-medium ${nameColor} sticky left-0 bg-white z-10 shadow-sm">${name}</td><td class="p-3.5 text-center font-bold text-indigo-600">${sunPercent}</td><td class="p-3.5 text-center font-bold text-sky-600">${wedPercent}</td><td class="p-3.5 text-center font-extrabold ${nameColor}">${totalScore} </td>`;
+                    html += `<tr class="${rowClass}"><td class="p-3.5 font-medium ${nameColor} sticky left-0 bg-white z-10 shadow-sm">${name}</td><td class="p-3.5 text-center font-bold text-indigo-600">${sunCountText}</td><td class="p-3.5 text-center font-bold text-sky-600">${wedCountText}</td><td class="p-3.5 text-center font-extrabold ${nameColor}">${totalScore}</td>`;
 
                     sortedDates.forEach(dateStr => {
                         const matchedLog = userLogs.find(log => { const d = new Date(log.timestamp); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` === dateStr; });
