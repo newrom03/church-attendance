@@ -364,16 +364,31 @@
                 let sumAtt = 0; let sumAbs = 0;
 
                 districtNames.forEach(dist => {
-                    const normDist = normalizeStr(dist); const totalMembers = districtData[dist].reg.length;
-                    const distLogs = regMonthLogs.filter(log => normalizeStr(log.district) === normDist);
-                    const getAttCount = (dStr) => distLogs.filter(log => { const d = new Date(log.timestamp); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` === dStr; }).length;
-                    const latestAtt = getAttCount(latestDate); const latestAbs = Math.max(0, totalMembers - latestAtt);
+                    // 🔥 오직 공식 등록 성도(reg) 수 기준 및 reg 성도의 출석만 집계
+                    const regMembers = districtData[dist].reg || [];
+                    const totalMembers = regMembers.length;
+                    const normDist = normalizeStr(dist);
+                    
+                    const distRegLogs = regMonthLogs.filter(log => normalizeStr(log.district) === normDist);
+                    const getRegAttCount = (dStr) => {
+                        return regMembers.filter(memberName => {
+                            const normName = normalizeStr(memberName);
+                            return distRegLogs.some(log => {
+                                const d = new Date(log.timestamp);
+                                const logDateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                                return normalizeStr(log.name) === normName && logDateStr === dStr;
+                            });
+                        }).length;
+                    };
+
+                    const latestAtt = getRegAttCount(latestDate); 
+                    const latestAbs = Math.max(0, totalMembers - latestAtt);
                     
                     sumAtt += latestAtt; sumAbs += latestAbs;
 
                     let trendHtml = `<span class="text-slate-400 text-xs">-</span>`;
                     if (prevDate) {
-                        const prevAtt = getAttCount(prevDate); const diff = latestAtt - prevAtt;
+                        const prevAtt = getRegAttCount(prevDate); const diff = latestAtt - prevAtt;
                         if (diff > 0) trendHtml = `<span class="text-emerald-500 font-bold bg-emerald-50 px-2 py-1 rounded-md text-xs">▲ +${diff} ${t.trendUp}</span>`;
                         else if (diff < 0) trendHtml = `<span class="text-red-500 font-bold bg-red-50 px-2 py-1 rounded-md text-xs">▼ ${diff} ${t.trendDown}</span>`;
                         else trendHtml = `<span class="text-slate-400 font-medium bg-slate-50 px-2 py-1 rounded-md text-xs">${t.trendSame}</span>`;
