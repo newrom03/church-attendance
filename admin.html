@@ -270,7 +270,7 @@
             } else {
                 btnDist.className = 'tab-active px-4 py-2 text-xs font-bold rounded-md transition w-1/2 sm:w-auto';
                 btnDash.className = 'tab-inactive px-4 py-2 text-xs font-bold rounded-md transition w-1/2 sm:w-auto';
-                viewDist.classList.hidden = false; viewDist.classList.remove('hidden'); viewDash.classList.add('hidden');
+                viewDist.classList.remove('hidden'); viewDash.classList.add('hidden');
             }
             renderAll();
         }
@@ -341,20 +341,17 @@
             const districtNames = Object.keys(districtData).filter(d => districtData[d].reg && districtData[d].reg.length > 0);
             const t = dict[currentLang];
 
-            // 🔥 트렌드 테이블 (Total 행 및 날짜 표시 추가)
-            const renderTrendTable = (tableId, datesArr, baseTitle) => {
+            const renderTrendTable = (tableId, datesArr) => {
                 let latestDateStr = "";
                 if (datesArr.length > 0) {
                     const p = datesArr[datesArr.length - 1].split('-');
-                    latestDateStr = ` (${p[1]commun || p[1]}/${p[2]})`.replace('commun || ', '');
                     latestDateStr = ` (${p[1]}/${p[2]})`;
                 }
                 
-                // 타이틀 옆에 날짜 반영
                 if (tableId === 'table-sun') {
-                    document.getElementById('txt-title-sun').innerHTML = `📈 ${t.titleSun.split(':')[0]}: ${t.colAtt} ${latestDateStr}`;
+                    document.getElementById('txt-title-sun').innerHTML = `📈 Domingo: Tendencia${latestDateStr}`;
                 } else {
-                    document.getElementById('txt-title-wed').innerHTML = `📉 ${t.titleWed.split(':')[0]}: ${t.colAtt} ${latestDateStr}`;
+                    document.getElementById('txt-title-wed').innerHTML = `📉 Miércoles: Tendencia${latestDateStr}`;
                 }
 
                 let html = `<thead><tr class="bg-slate-100 text-slate-500 uppercase tracking-wider text-[11px]"><th class="p-3 font-bold">${t.colDist}</th><th class="p-3 font-bold text-center">${t.colAtt}</th><th class="p-3 font-bold text-center">${t.colAbs}</th><th class="p-3 font-bold text-right">${t.colTrend}</th></tr></thead><tbody class="divide-y divide-slate-100">`;
@@ -384,14 +381,12 @@
                     html += `<tr class="hover:bg-slate-50/50"><td class="p-3 font-semibold text-slate-700">${dist}</td><td class="p-3 text-center font-bold text-indigo-600">${latestAtt}</td><td class="p-3 text-center text-slate-500">${latestAbs}</td><td class="p-3 text-right">${trendHtml}</td></tr>`;
                 });
 
-                // 맨 아래 Total 행 추가
                 html += `<tr class="bg-indigo-50/60 font-extrabold border-t-2 border-indigo-100"><td class="p-3 text-indigo-900">${t.totalLabel}</td><td class="p-3 text-center text-indigo-600">${sumAtt}</td><td class="p-3 text-center text-slate-700">${sumAbs}</td><td class="p-3"></td></tr>`;
-
                 html += `</tbody>`; document.getElementById(tableId).innerHTML = html;
             };
 
-            renderTrendTable('table-sun', sunDates, t.titleSun); 
-            renderTrendTable('table-wed', wedDates, t.titleWed);
+            renderTrendTable('table-sun', sunDates); 
+            renderTrendTable('table-wed', wedDates);
 
             let eduHtml = `<thead><tr class="bg-slate-100 text-slate-500 uppercase tracking-wider text-[11px]"><th class="p-3 font-bold">${t.colDist}</th><th class="p-3 font-bold text-center">${t.colTue}</th><th class="p-3 font-bold text-center">${t.colThu}</th><th class="p-3 font-bold text-center">${t.colSat}</th></tr></thead><tbody class="divide-y divide-slate-100">`;
             districtNames.forEach(dist => {
@@ -436,9 +431,6 @@
             `;
         }
 
-        // ==========================================
-        // 팝업 모달창 로직
-        // ==========================================
         function openModal(name, dist, dateStr) {
             pendingName = name; pendingDist = dist; pendingDate = dateStr;
             const parts = dateStr.split('-'); const dObj = new Date(parts[0], parts[1] - 1, parts[2]);
@@ -466,9 +458,6 @@
             } catch (e) { alert('Error de red'); document.getElementById('loading-indicator').classList.add('hidden'); }
         }
 
-        // ==========================================
-        // 구역 상세 매트릭스 렌더링
-        // ==========================================
         function renderDistrictView() {
             const t = dict[currentLang];
             const select = document.getElementById('district-selector');
