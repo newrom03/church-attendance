@@ -54,15 +54,20 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-xs font-bold text-slate-400 uppercase tracking-wider" id="txt-avg-sun">Promedio Asistencia (Domingo)</p>
-                            <h2 class="text-4xl font-extrabold text-slate-800 mt-2" id="val-avg-sun">0</h2>
-                            <p class="text-[10px] text-slate-400 mt-1" id="txt-avg-sub1">* Sólo miembros registrados</p>
+                            <div class="flex items-baseline gap-2 mt-2">
+                                <h2 class="text-4xl font-extrabold text-slate-800" id="val-avg-sun">0</h2>
+                                <span class="text-sm font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md" id="val-avg-sun-pct">0%</span>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-1" id="txt-avg-sub1">* Sólo miembros registrados (Total: <span id="total-reg-count">0</span>명)</p>
                         </div>
                         <div class="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500 text-2xl">☀️</div>
                     </div>
-                    <!-- 일요일 예배별 추이 그래프 영역 -->
                     <div class="pt-3 border-t border-slate-100">
-                        <p class="text-xs font-bold text-slate-500 mb-2">📈 예배별 전체 출석 추이 (일요일)</p>
-                        <div id="chart-sun-container" class="flex items-end gap-2 h-16 pt-2 overflow-x-auto"></div>
+                        <div class="flex justify-between items-center mb-1">
+                            <p class="text-xs font-bold text-slate-500">📈 추이 (일요일)</p>
+                            <span class="text-[10px] text-indigo-600 font-bold" id="latest-sun-info">최근: -</span>
+                        </div>
+                        <div id="chart-sun-container" class="w-full h-20 pt-1"></div>
                     </div>
                 </div>
 
@@ -70,15 +75,20 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-xs font-bold text-slate-400 uppercase tracking-wider" id="txt-avg-wed">Promedio Asistencia (Miércoles)</p>
-                            <h2 class="text-4xl font-extrabold text-slate-800 mt-2" id="val-avg-wed">0</h2>
-                            <p class="text-[10px] text-slate-400 mt-1" id="txt-avg-sub2">* Sólo miembros registrados</p>
+                            <div class="flex items-baseline gap-2 mt-2">
+                                <h2 class="text-4xl font-extrabold text-slate-800" id="val-avg-wed">0</h2>
+                                <span class="text-sm font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded-md" id="val-avg-wed-pct">0%</span>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-1" id="txt-avg-sub2">* Sólo miembros registrados (Total: <span id="total-reg-count2">0</span>명)</p>
                         </div>
                         <div class="w-12 h-12 rounded-full bg-sky-50 flex items-center justify-center text-sky-500 text-2xl">🌙</div>
                     </div>
-                    <!-- 수요일 예배별 추이 그래프 영역 -->
                     <div class="pt-3 border-t border-slate-100">
-                        <p class="text-xs font-bold text-slate-500 mb-2">📉 예배별 전체 출석 추이 (수요일)</p>
-                        <div id="chart-wed-container" class="flex items-end gap-2 h-16 pt-2 overflow-x-auto"></div>
+                        <div class="flex justify-between items-center mb-1">
+                            <p class="text-xs font-bold text-slate-500">📉 추이 (수요일)</p>
+                            <span class="text-[10px] text-sky-600 font-bold" id="latest-wed-info">최근: -</span>
+                        </div>
+                        <div id="chart-wed-container" class="w-full h-20 pt-1"></div>
                     </div>
                 </div>
             </div>
@@ -329,6 +339,14 @@
                 return isReg(log.name, distKey);
             });
 
+            // 총 등록 성도수 계산
+            let totalRegisteredCount = 0;
+            for (const dist in districtData) {
+                if (districtData[dist].reg) totalRegisteredCount += districtData[dist].reg.length;
+            }
+            document.getElementById('total-reg-count').innerText = totalRegisteredCount;
+            document.getElementById('total-reg-count2').innerText = totalRegisteredCount;
+
             const dateMap = { sun: new Set(), wed: new Set(), tue: new Set(), thu: new Set(), sat: new Set() };
             regMonthLogs.forEach(log => {
                 const d = new Date(log.timestamp);
@@ -351,57 +369,93 @@
                 return Math.round(totalAtt / datesArr.length);
             };
 
-            document.getElementById('val-avg-sun').innerText = calcAvg(sunDates, 0);
-            document.getElementById('val-avg-wed').innerText = calcAvg(wedDates, 3);
+            const avgSun = calcAvg(sunDates, 0);
+            const avgWed = calcAvg(wedDates, 3);
 
-            // 📊 예배별 전체 출석 추이 그래프 렌더링 함수
-            const renderMiniChart = (containerId, datesArr, dayNum, colorClass) => {
+            document.getElementById('val-avg-sun').innerText = avgSun;
+            document.getElementById('val-avg-sun-pct').innerText = totalRegisteredCount > 0 ? `${Math.round((avgSun / totalRegisteredCount) * 100)}%` : '0%';
+            
+            document.getElementById('val-avg-wed').innerText = avgWed;
+            document.getElementById('val-avg-wed-pct').innerText = totalRegisteredCount > 0 ? `${Math.round((avgWed / totalRegisteredCount) * 100)}%` : '0%';
+
+            // 📈 세련된 SVG 꺾은선(Line Chart) 그래프 렌더링 함수
+            const renderSvgLineChart = (containerId, datesArr, dayNum, infoSpanId, lineColor) => {
                 const container = document.getElementById(containerId);
+                const infoSpan = document.getElementById(infoSpanId);
+
                 if (datesArr.length === 0) {
-                    container.innerHTML = `<span class="text-xs text-slate-400 italic">No data</span>`;
+                    container.innerHTML = `<div class="text-xs text-slate-400 italic text-center py-4">No data</div>`;
+                    infoSpan.innerText = "최근: -";
                     return;
                 }
-                let counts = datesArr.map(dStr => {
-                    return {
-                        date: dStr,
-                        count: regMonthLogs.filter(log => {
-                            const d = new Date(log.timestamp);
-                            return d.getDay() === dayNum && `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` === dStr;
-                        }).length
-                    };
-                });
-                const maxCount = Math.max(...counts.map(c => c.count), 1);
-                
-                let html = '';
-                counts.forEach((item, idx) => {
-                    const heightPercent = Math.max(Math.round((item.count / maxCount) * 100), 15);
-                    const p = item.date.split('-');
-                    const label = `${p[1]}/${p[2]}`;
-                    
-                    // 상승/하락 비교
-                    let diffBadge = '';
-                    if (idx > 0) {
-                        const diff = item.count - counts[idx-1].count;
-                        if (diff > 0) diffBadge = `<span class="text-[9px] text-emerald-600 font-bold">▲+${diff}</span>`;
-                        else if (diff < 0) diffBadge = `<span class="text-[9px] text-red-500 font-bold">▼${diff}</span>`;
-                    }
 
-                    html += `
-                        <div class="flex flex-col items-center flex-1 h-full justify-end group relative">
-                            <div class="text-[10px] font-bold text-slate-600 mb-1">${item.count}</div>
-                            <div class="w-full max-w-[28px] ${colorClass} rounded-t transition-all duration-300 hover:opacity-80" style="height: ${heightPercent}%;"></div>
-                            <div class="text-[9px] text-slate-400 mt-1 whitespace-nowrap">${label}</div>
-                            <div class="absolute -top-6 hidden group-hover:block bg-slate-800 text-white text-[9px] px-1.5 py-0.5 rounded shadow whitespace-nowrap z-20">
-                                ${label}: ${item.count}명 ${diffBadge}
-                            </div>
-                        </div>
-                    `;
+                let counts = datesArr.map(dStr => {
+                    const cnt = regMonthLogs.filter(log => {
+                        const d = new Date(log.timestamp);
+                        return d.getDay() === dayNum && `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` === dStr;
+                    }).length;
+                    const p = dStr.split('-');
+                    return { date: dStr, label: `${p[1]}/${p[2]}`, count: cnt };
                 });
-                container.innerHTML = html;
+
+                const latest = counts[counts.length - 1];
+                let diffText = "";
+                if (counts.length > 1) {
+                    const prev = counts[counts.length - 2].count;
+                    const diff = latest.count - prev;
+                    if (diff > 0) diffText = ` (▲+${diff})`;
+                    else if (diff < 0) diffText = ` (▼${diff})`;
+                    else diffText = ` (ㅡ 동일)`;
+                }
+                const latestPct = totalRegisteredCount > 0 ? Math.round((latest.count / totalRegisteredCount) * 100) : 0;
+                infoSpan.innerText = `최근 (${latest.label}): ${latest.count}명 (${latestPct}%)${diffText}`;
+
+                // SVG 생성
+                const width = 320; const height = 75;
+                const paddingLeft = 25; const paddingRight = 25; const paddingTop = 15; const paddingBottom = 20;
+                const chartWidth = width - paddingLeft - paddingRight;
+                const chartHeight = height - paddingTop - paddingBottom;
+
+                const maxVal = Math.max(...counts.map(c => c.count), 10);
+                const minVal = 0;
+
+                const getX = (i) => {
+                    if (counts.length === 1) return paddingLeft + chartWidth / 2;
+                    return paddingLeft + (i / (counts.length - 1)) * chartWidth;
+                };
+                const getY = (val) => {
+                    return paddingTop + chartHeight - ((val - minVal) / (maxVal - minVal)) * chartHeight;
+                };
+
+                let points = counts.map((c, i) => `${getX(i)},${getY(c.count)}`).join(" ");
+
+                let svg = `<svg viewBox="0 0 ${width} ${height}" class="w-full h-full overflow-visible">`;
+                
+                // 배경 그리드 라인
+                svg += `<line x1="${paddingLeft}" y1="${getY(maxVal/2)}" x2="${width - paddingRight}" y2="${getY(maxVal/2)}" stroke="#f1f5f9" stroke-dasharray="3 3" stroke-width="1" />`;
+                svg += `<line x1="${paddingLeft}" y1="${getY(0)}" x2="${width - paddingRight}" y2="${getY(0)}" stroke="#e2e8f0" stroke-width="1" />`;
+
+                // 꺾은선 경로
+                if (counts.length > 1) {
+                    svg += `<polyline fill="none" stroke="${lineColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="${points}" />`;
+                }
+
+                // 데이터 점(dot) 및 텍스트 레이블
+                counts.forEach((c, i) => {
+                    const cx = getX(i); const cy = getY(c.count);
+                    svg += `<circle cx="${cx}" cy="${cy}" r="4" fill="#ffffff" stroke="${lineColor}" stroke-width="2.5" />`;
+                    // 값 표시
+                    svg += `<text x="${cx}" y="${cy - 8}" font-size="10" font-weight="bold" fill="#334155" text-anchor="middle">${c.count}</text>`;
+                    // 날짜 표시
+                    svg += `<text x="${cx}" y="${height - 2}" font-size="9" fill="#94a3b8" text-anchor="middle">${c.label}</text>`;
+                });
+
+                svg += `</svg>`;
+                container.innerHTML = svg;
             };
 
-            renderMiniChart('chart-sun-container', sunDates, 0, 'bg-indigo-500');
-            renderMiniChart('chart-wed-container', wedDates, 3, 'bg-sky-500');
+            renderSvgLineChart('chart-sun-container', sunDates, 0, 'latest-sun-info', '#4f46e5');
+            renderSvgLineChart('chart-wed-container', wedDates, 3, 'latest-wed-info', '#0284c7');
 
             const districtNames = Object.keys(districtData).filter(d => districtData[d].reg && districtData[d].reg.length > 0);
             const t = dict[currentLang];
@@ -432,7 +486,10 @@
                     const normDist = normalizeStr(dist); const totalMembers = districtData[dist].reg.length;
                     const distLogs = regMonthLogs.filter(log => normalizeStr(log.district) === normDist);
                     const getAttCount = (dStr) => distLogs.filter(log => { const d = new Date(log.timestamp); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` === dStr; }).length;
-                    const latestAtt = getAttCount(latestDate); const latestAbs = Math.max(0, totalMembers - latestAtt);
+                    const latestAtt = getAttCount(latestDate); 
+                    
+                    // 🎯 결석자 수 정확히 계산 (구역 총원 - 실제 출석 인원)
+                    const latestAbs = Math.max(0, totalMembers - latestAtt);
                     
                     sumAtt += latestAtt; sumAbs += latestAbs;
 
@@ -523,9 +580,6 @@
             } catch (e) { alert('Error de red'); document.getElementById('loading-indicator').classList.add('hidden'); }
         }
 
-        // ==========================================
-        // 구역 상세 매트릭스 렌더링 (퍼센트 -> 총 참석 횟수/인원수로 변경)
-        // ==========================================
         function renderDistrictView() {
             const t = dict[currentLang];
             const select = document.getElementById('district-selector');
@@ -596,7 +650,6 @@
                         }
                     });
                     
-                    // 퍼센트 대신 총 참석 횟수(회) 표시
                     const sunCountText = `${attendedSundays}회`;
                     const wedCountText = `${attendedWednesdays}회`;
                     
