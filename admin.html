@@ -180,6 +180,7 @@
                 'selectDistDef': 'Seleccione un distrito', 'noDistSelected': 'Seleccione un distrito arriba.',
                 'colName': 'Nombre', 'colSunPct': 'Dom(%)', 'colWedPct': 'Mié(%)', 'colScore': 'Pt',
                 'titleDistAbs': '🚨 Lista de Ausencias (Distrito)', 'unregLabel': '--- No Registrados (Excluidos de estadísticas) ---',
+                'totalLabel': 'TOTAL',
                 'modalTitle': 'Asistencia Manual', 'modalOpt1': 'Asistencia Normal (1 pt)', 'modalOpt1Sub': 'Asistió el día correspondiente',
                 'modalOpt2': 'Día Alternativo (0.5 pts)', 'modalOpt2Sub': 'Recuperación en otro día',
                 'modalCancel': 'Cancelar', 'modalSave': 'Guardar ✨'
@@ -202,6 +203,7 @@
                 'selectDistDef': '구역을 선택하세요', 'noDistSelected': '상단에서 조회할 구역을 선택해 주세요.',
                 'colName': '성도 이름', 'colSunPct': '일(%)', 'colWedPct': '수(%)', 'colScore': '점수',
                 'titleDistAbs': '🚨 예배 결석 관리 명단 (현재 구역)', 'unregLabel': '--- 미등록 성도 (통계 및 경고명단 제외) ---',
+                'totalLabel': 'TOTAL (총합)',
                 'modalTitle': '수동 출석 입력', 'modalOpt1': '정상 참석 (1점)', 'modalOpt1Sub': '해당 예배에 정상적으로 참석함',
                 'modalOpt2': '대체 출석 (0.5점)', 'modalOpt2Sub': '다른 요일에 보강 참석함',
                 'modalCancel': '취소', 'modalSave': '출석 저장 ✨'
@@ -215,18 +217,12 @@
             try {
                 const resDist = await fetch(GAS_API_URL);
                 const rawDistData = await resDist.json();
-                
-                // 구역 데이터 정규화 (배열 형태든 객체 형태든 안전하게 변환)
                 districtData = {};
                 for (const dist in rawDistData) {
                     const val = rawDistData[dist];
-                    if (Array.isArray(val)) {
-                        districtData[dist] = { reg: val, unreg: [] };
-                    } else if (val && typeof val === 'object') {
-                        districtData[dist] = { reg: val.reg || [], unreg: val.unreg || [] };
-                    } else {
-                        districtData[dist] = { reg: [], unreg: [] };
-                    }
+                    if (Array.isArray(val)) { districtData[dist] = { reg: val, unreg: [] }; }
+                    else if (val && typeof val === 'object') { districtData[dist] = { reg: val.reg || [], unreg: val.unreg || [] }; }
+                    else { districtData[dist] = { reg: [], unreg: [] }; }
                 }
 
                 const resLogs = await fetch(GAS_API_URL + "?action=attendance");
@@ -244,12 +240,8 @@
                     }
                     switchTab('dash');
                 } else { renderAll(); }
-            } catch (err) { 
-                console.error(err);
-                alert('Error de conexión'); 
-            } finally { 
-                document.getElementById('loading-indicator').classList.add('hidden'); 
-            }
+            } catch (err) { alert('Error de conexión'); } 
+            finally { document.getElementById('loading-indicator').classList.add('hidden'); }
         }
 
         function setLang(lang) {
@@ -278,7 +270,7 @@
             } else {
                 btnDist.className = 'tab-active px-4 py-2 text-xs font-bold rounded-md transition w-1/2 sm:w-auto';
                 btnDash.className = 'tab-inactive px-4 py-2 text-xs font-bold rounded-md transition w-1/2 sm:w-auto';
-                viewDist.classList.remove('hidden'); viewDash.classList.add('hidden');
+                viewDist.classList.hidden = false; viewDist.classList.remove('hidden'); viewDash.classList.add('hidden');
             }
             renderAll();
         }
@@ -349,18 +341,39 @@
             const districtNames = Object.keys(districtData).filter(d => districtData[d].reg && districtData[d].reg.length > 0);
             const t = dict[currentLang];
 
-            const renderTrendTable = (tableId, datesArr) => {
+            // 🔥 트렌드 테이블 (Total 행 및 날짜 표시 추가)
+            const renderTrendTable = (tableId, datesArr, baseTitle) => {
+                let latestDateStr = "";
+                if (datesArr.length > 0) {
+                    const p = datesArr[datesArr.length - 1].split('-');
+                    latestDateStr = ` (${p[1]commun || p[1]}/${p[2]})`.replace('commun || ', '');
+                    latestDateStr = ` (${p[1]}/${p[2]})`;
+                }
+                
+                // 타이틀 옆에 날짜 반영
+                if (tableId === 'table-sun') {
+                    document.getElementById('txt-title-sun').innerHTML = `📈 ${t.titleSun.split(':')[0]}: ${t.colAtt} ${latestDateStr}`;
+                } else {
+                    document.getElementById('txt-title-wed').innerHTML = `📉 ${t.titleWed.split(':')[0]}: ${t.colAtt} ${latestDateStr}`;
+                }
+
                 let html = `<thead><tr class="bg-slate-100 text-slate-500 uppercase tracking-wider text-[11px]"><th class="p-3 font-bold">${t.colDist}</th><th class="p-3 font-bold text-center">${t.colAtt}</th><th class="p-3 font-bold text-center">${t.colAbs}</th><th class="p-3 font-bold text-right">${t.colTrend}</th></tr></thead><tbody class="divide-y divide-slate-100">`;
                 if (datesArr.length === 0) {
                     html += `<tr><td colspan="4" class="p-4 text-center text-slate-400 italic">${t.noData}</td></tr></tbody>`;
                     document.getElementById(tableId).innerHTML = html; return;
                 }
+                
                 const latestDate = datesArr[datesArr.length - 1]; const prevDate = datesArr.length > 1 ? datesArr[datesArr.length - 2] : null;
+                let sumAtt = 0; let sumAbs = 0;
+
                 districtNames.forEach(dist => {
                     const normDist = normalizeStr(dist); const totalMembers = districtData[dist].reg.length;
                     const distLogs = regMonthLogs.filter(log => normalizeStr(log.district) === normDist);
                     const getAttCount = (dStr) => distLogs.filter(log => { const d = new Date(log.timestamp); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` === dStr; }).length;
                     const latestAtt = getAttCount(latestDate); const latestAbs = Math.max(0, totalMembers - latestAtt);
+                    
+                    sumAtt += latestAtt; sumAbs += latestAbs;
+
                     let trendHtml = `<span class="text-slate-400 text-xs">-</span>`;
                     if (prevDate) {
                         const prevAtt = getAttCount(prevDate); const diff = latestAtt - prevAtt;
@@ -370,10 +383,15 @@
                     }
                     html += `<tr class="hover:bg-slate-50/50"><td class="p-3 font-semibold text-slate-700">${dist}</td><td class="p-3 text-center font-bold text-indigo-600">${latestAtt}</td><td class="p-3 text-center text-slate-500">${latestAbs}</td><td class="p-3 text-right">${trendHtml}</td></tr>`;
                 });
+
+                // 맨 아래 Total 행 추가
+                html += `<tr class="bg-indigo-50/60 font-extrabold border-t-2 border-indigo-100"><td class="p-3 text-indigo-900">${t.totalLabel}</td><td class="p-3 text-center text-indigo-600">${sumAtt}</td><td class="p-3 text-center text-slate-700">${sumAbs}</td><td class="p-3"></td></tr>`;
+
                 html += `</tbody>`; document.getElementById(tableId).innerHTML = html;
             };
 
-            renderTrendTable('table-sun', sunDates); renderTrendTable('table-wed', wedDates);
+            renderTrendTable('table-sun', sunDates, t.titleSun); 
+            renderTrendTable('table-wed', wedDates, t.titleWed);
 
             let eduHtml = `<thead><tr class="bg-slate-100 text-slate-500 uppercase tracking-wider text-[11px]"><th class="p-3 font-bold">${t.colDist}</th><th class="p-3 font-bold text-center">${t.colTue}</th><th class="p-3 font-bold text-center">${t.colThu}</th><th class="p-3 font-bold text-center">${t.colSat}</th></tr></thead><tbody class="divide-y divide-slate-100">`;
             districtNames.forEach(dist => {
@@ -581,7 +599,6 @@
             document.getElementById('btn-tab-dash').innerText = t.tabDash; document.getElementById('btn-tab-dist').innerText = t.tabDist;
             document.getElementById('txt-avg-sun').innerText = t.avgSun; document.getElementById('txt-avg-sub1').innerText = t.avgSub;
             document.getElementById('txt-avg-wed').innerText = t.avgWed; document.getElementById('txt-avg-sub2').innerText = t.avgSub;
-            document.getElementById('txt-title-sun').innerText = t.titleSun; document.getElementById('txt-title-wed').innerText = t.titleWed;
             document.getElementById('txt-title-edu').innerText = t.titleEdu; document.getElementById('txt-title-abs').innerText = t.titleAbs;
             document.getElementById('txt-title-dist-detail').innerText = t.titleDistDetail; document.getElementById('txt-sub-dist-detail').innerText = t.subDistDetail;
             const noDistEl = document.getElementById('txt-no-dist-selected'); if(noDistEl) noDistEl.innerText = t.noDistSelected;
