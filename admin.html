@@ -125,7 +125,7 @@
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4">
                     <div>
                         <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2" id="txt-title-dist-detail">📋 Matriz Detallada por Distrito</h2>
-                        <p class="text-xs text-slate-400 mt-1" id="txt-sub-dist-detail">Seleccione un distrito. Haga clic en [✗ 0] para corregir asistencia.</p>
+                        <p class="text-xs text-slate-400 mt-1" id="txt-sub-dist-detail">Haga clic en cualquier celda para agregar o corregir asistencia.</p>
                     </div>
                     <select id="district-selector" onchange="renderDistrictView()" class="bg-slate-50 text-slate-700 text-sm font-semibold px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         <option value="">Seleccione un distrito</option>
@@ -158,10 +158,11 @@
         </div>
     </main>
 
+    <!-- 출석 수정 및 취소 모달 -->
     <div id="modal-overlay" class="hidden fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-all">
             <div class="bg-slate-50 px-5 py-4 border-b border-slate-100 flex justify-between items-center">
-                <h3 class="font-bold text-slate-800" id="modal-title">Asistencia Manual</h3>
+                <h3 class="font-bold text-slate-800" id="modal-title">Gestión de Asistencia</h3>
                 <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
             </div>
             <div class="p-6 space-y-5">
@@ -171,18 +172,25 @@
                     <p class="text-sm font-semibold text-slate-600 mt-1" id="modal-date-text">DATE</p>
                 </div>
                 <div class="space-y-3">
-                    <label class="flex items-start gap-3 p-4 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition">
-                        <input type="radio" name="att_score" value="1.0" checked class="mt-1 w-4 h-4 text-indigo-600">
+                    <label class="flex items-start gap-3 p-3.5 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition">
+                        <input type="radio" name="att_score" value="1.0" id="radio-score-1" class="mt-1 w-4 h-4 text-indigo-600">
                         <div>
-                            <p class="text-sm font-bold text-slate-800" id="modal-opt1">정상 출석 (1 pt)</p>
-                            <p class="text-xs text-slate-500 mt-0.5" id="modal-opt1-sub">해당 예배에 정상 참석</p>
+                            <p class="text-sm font-bold text-slate-800" id="modal-opt1">Asistencia Normal (1 pt)</p>
+                            <p class="text-xs text-slate-500 mt-0.5" id="modal-opt1-sub">Asistió el día correspondiente</p>
                         </div>
                     </label>
-                    <label class="flex items-start gap-3 p-4 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition">
-                        <input type="radio" name="att_score" value="0.5" class="mt-1 w-4 h-4 text-indigo-600">
+                    <label class="flex items-start gap-3 p-3.5 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition">
+                        <input type="radio" name="att_score" value="0.5" id="radio-score-05" class="mt-1 w-4 h-4 text-indigo-600">
                         <div>
-                            <p class="text-sm font-bold text-slate-800" id="modal-opt2">대체 출석 (0.5 pts)</p>
-                            <p class="text-xs text-slate-500 mt-0.5" id="modal-opt2-sub">다른 날 보강</p>
+                            <p class="text-sm font-bold text-slate-800" id="modal-opt2">Día Alternativo / Tardanza (0.5 pts)</p>
+                            <p class="text-xs text-slate-500 mt-0.5" id="modal-opt2-sub">Recuperación en otro día</p>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-3 p-3.5 border border-red-200 bg-red-50/40 rounded-xl cursor-pointer hover:bg-red-50 transition">
+                        <input type="radio" name="att_score" value="0" id="radio-score-0" class="mt-1 w-4 h-4 text-red-600">
+                        <div>
+                            <p class="text-sm font-bold text-red-700" id="modal-opt3">Marcar como Ausente (0 pt / Eliminar)</p>
+                            <p class="text-xs text-red-500 mt-0.5" id="modal-opt3-sub">Cancela la asistencia registrada</p>
                         </div>
                     </label>
                 </div>
@@ -220,13 +228,14 @@
                 'abs2_7': 'Ausencia Continua (2~7 veces)', 'abs2_7Sub': 'Control: Tribu',
                 'abs8': 'Ausencia Larga (8+ veces)', 'abs8Sub': 'Control: General',
                 'noData': 'Sin datos', 'titleDistDetail': '📋 Matriz Detallada por Distrito',
-                'subDistDetail': 'Haga clic en [✗ 0] para corregir asistencia.',
+                'subDistDetail': 'Haga clic en cualquier celda para agregar o corregir asistencia.',
                 'selectDistDef': 'Seleccione un distrito', 'noDistSelected': 'Seleccione un distrito arriba.',
                 'colName': 'Nombre', 'colSunCount': 'Dom(명)', 'colWedCount': 'Mié(명)', 'colScore': 'Pt',
                 'titleDistAbs': '🚨 Lista de Ausencias (Distrito Actual)', 'unregLabel': '--- No Registrados (Excluidos de estadísticas) ---',
                 'totalLabel': 'TOTAL',
-                'modalTitle': 'Asistencia Manual', 'modalOpt1': 'Asistencia Normal (1 pt)', 'modalOpt1Sub': 'Asistió el día correspondiente',
-                'modalOpt2': 'Día Alternativo (0.5 pts)', 'modalOpt2Sub': 'Recuperación en otro día',
+                'modalTitle': 'Gestión de Asistencia', 'modalOpt1': 'Asistencia Normal (1 pt)', 'modalOpt1Sub': 'Asistió el día correspondiente',
+                'modalOpt2': 'Día Alternativo / Tardanza (0.5 pts)', 'modalOpt2Sub': 'Recuperación en otro día',
+                'modalOpt3': 'Marcar como Ausente (0 pt / Eliminar)', 'modalOpt3Sub': 'Cancela la asistencia registrada',
                 'modalCancel': 'Cancelar', 'modalSave': 'Guardar ✨',
                 'reasonDashTitle': '📋 Motivos de Ausencia (Toda la Iglesia)',
                 'reasonTotalPrefix': 'Total enviados: ',
@@ -263,13 +272,14 @@
                 'abs2_7': '2~7회 연속 결석', 'abs2_7Sub': '관리: 지파',
                 'abs8': '8회 이상 장기 결석', 'abs8Sub': '관리: 총회',
                 'noData': '데이터 없음', 'titleDistDetail': '📋 구역별·날짜별 출석 상세 매트릭스',
-                'subDistDetail': '[✗ 0] 뱃지를 누르면 정상(1점)/대체출석(0.5점)을 선택할 수 있습니다.',
+                'subDistDetail': '어떤 뱃지든 클릭하면 출석 점수를 변경하거나 취소할 수 있습니다.',
                 'selectDistDef': '구역을 선택하세요', 'noDistSelected': '상단에서 조회할 구역을 선택해 주세요.',
                 'colName': '성도 이름', 'colSunCount': '일(참석)', 'colWedCount': '수(참석)', 'colScore': '점수',
                 'titleDistAbs': '🚨 예배 결석 관리 명단 (현재 구역)', 'unregLabel': '--- 미등록 성도 (통계 및 경고명단 제외) ---',
                 'totalLabel': 'TOTAL (총합)',
-                'modalTitle': '수동 출석 입력', 'modalOpt1': '정상 참석 (1점)', 'modalOpt1Sub': '해당 예배에 정상적으로 참석함',
-                'modalOpt2': '대체 출석 (0.5점)', 'modalOpt2Sub': '다른 요일에 보강 참석함',
+                'modalTitle': '출석 점수 수정 및 관리', 'modalOpt1': '정상 참석 (1점)', 'modalOpt1Sub': '해당 예배에 정상적으로 참석함',
+                'modalOpt2': '대체 출석 / 지각 (0.5점)', 'modalOpt2Sub': '다른 요일에 보강 참석함',
+                'modalOpt3': '결석 처리 (0점 / 기록 삭제)', 'modalOpt3Sub': '등록된 출석 기록을 삭제하고 결석으로 변경합니다',
                 'modalCancel': '취소', 'modalSave': '출석 저장 ✨',
                 'reasonDashTitle': '📋 결석 사유별 분석 및 통계 (전체)',
                 'reasonTotalPrefix': '총 제출: ',
@@ -304,14 +314,12 @@
         // 일~화(0,1,2): 직전 일요일까지 / 수~토(3,4,5,6): 당주 수요일까지 유효 날짜 판정
         function getMaxValidWorshipDate() {
             const now = new Date();
-            const day = now.getDay(); // 0:일, 1:월, 2:화, 3:수, 4:목, 5:금, 6:토
+            const day = now.getDay();
             let target = new Date(now);
             
             if (day >= 0 && day <= 2) {
-                // 일~화: 이번 주(혹은 오늘) 일요일 날짜 구하기
                 target.setDate(now.getDate() - day);
             } else {
-                // 수~토: 이번 주 수요일 날짜 구하기
                 target.setDate(now.getDate() - (day - 3));
             }
             return `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, '0')}-${String(target.getDate()).padStart(2, '0')}`;
@@ -613,7 +621,6 @@
             });
             eduHtml += `</tbody>`; document.getElementById('table-edu').innerHTML = eduHtml;
 
-            // 🚨 일~화요일은 직전 일요일까지만, 수~토요일은 수요일까지만 결석 판정
             const maxValidDate = getMaxValidWorshipDate();
             const pastWorshipDates = [...sunDates, ...wedDates].filter(dStr => dStr <= maxValidDate).sort();
 
@@ -736,19 +743,21 @@
             }
             const sortedDates = Array.from(dateSet).sort();
             
-            // 일~화: 직전 일요일까지 / 수~토: 당주 수요일까지
             const maxValidDate = getMaxValidWorshipDate();
-            const worshipDates = sortedDates.filter(dateStr => {
+            // 최신순으로 정렬하여 가장 최근 예배가 드롭다운 첫머리에 위치
+            const worshipDatesDesc = sortedDates.filter(dateStr => {
                 const dObj = new Date(dateStr.split('-')[0], dateStr.split('-')[1] - 1, dateStr.split('-')[2]);
                 return (dObj.getDay() === 0 || dObj.getDay() === 3) && dateStr <= maxValidDate;
-            });
+            }).reverse();
 
             const reasonDateSel = document.getElementById('reason-date-selector');
             const currentSelectedDate = reasonDateSel.value;
             const cultoLabel = currentLang === 'ES' ? 'Culto' : '예배';
-            reasonDateSel.innerHTML = worshipDates.map(d => `<option value="${d}" ${d === currentSelectedDate ? 'selected' : ''}>${d} (${cultoLabel})</option>`).join('');
-            if (!reasonDateSel.value && worshipDates.length > 0) {
-                reasonDateSel.value = worshipDates[worshipDates.length - 1];
+            reasonDateSel.innerHTML = worshipDatesDesc.map(d => `<option value="${d}" ${d === currentSelectedDate ? 'selected' : ''}>${d} (${cultoLabel})</option>`).join('');
+            
+            // 첫 진입 시 가장 최근 예배를 기본값으로 선택
+            if ((!reasonDateSel.value || !worshipDatesDesc.includes(reasonDateSel.value)) && worshipDatesDesc.length > 0) {
+                reasonDateSel.value = worshipDatesDesc[0];
             }
 
             renderAbsentMembersForReason(selectedDist, reasonDateSel.value, distLogs);
@@ -793,26 +802,28 @@
 
                     html += `<tr class="${rowClass}"><td class="p-3.5 font-medium ${nameColor} sticky left-0 bg-white z-10 shadow-sm">${name}</td><td class="p-3.5 text-center font-bold text-indigo-600">${sunCountText}</td><td class="p-3.5 text-center font-bold text-sky-600">${wedCountText}</td><td class="p-3.5 text-center font-extrabold ${nameColor}">${totalScore}</td>`;
 
+                    // 출석/결석 뱃지 모두 클릭 가능 (수정 및 삭제 지원)
                     sortedDates.forEach(dateStr => {
                         const matchedLog = userLogs.find(log => { const d = new Date(log.timestamp); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` === dateStr; });
                         if (matchedLog) {
                             const scoreVal = Number(matchedLog.score);
-                            const badgeColor = scoreVal === 0.5 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700';
-                            html += `<td class="p-3.5 text-center"><span class="px-2 py-1 text-xs font-bold rounded-lg ${badgeColor}">✓ ${scoreVal}</span></td>`;
+                            const badgeColor = scoreVal === 0.5 ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200';
+                            html += `<td class="p-3.5 text-center"><button onclick="openModal('${name}', '${selectedDist}', '${dateStr}', ${scoreVal})" class="px-2 py-1 text-xs font-bold rounded-lg ${badgeColor} transition cursor-pointer transform active:scale-95" title="클릭하여 수정">✓ ${scoreVal}</button></td>`;
                         } else {
-                            html += `<td class="p-3.5 text-center"><button onclick="openModal('${name}', '${selectedDist}', '${dateStr}')" class="px-2 py-1 text-xs font-bold rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white hover:shadow-md transition-all cursor-pointer transform active:scale-95">✗ 0</button></td>`;
+                            html += `<td class="p-3.5 text-center"><button onclick="openModal('${name}', '${selectedDist}', '${dateStr}', 0)" class="px-2 py-1 text-xs font-bold rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white hover:shadow-md transition cursor-pointer transform active:scale-95">✗ 0</button></td>`;
                         }
                     });
                     html += `</tr>`;
 
                     if(!isUnregSection) {
                         let consecutiveAbsences = 0; let hitAttendance = false;
-                        for (let i = worshipDates.length - 1; i >= 0; i--) {
-                            const dateStr = worshipDates[i];
+                        const worshipAsc = [...worshipDatesDesc].reverse();
+                        for (let i = worshipAsc.length - 1; i >= 0; i--) {
+                            const dateStr = worshipAsc[i];
                             const attended = userLogs.some(log => { const d = new Date(log.timestamp); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` === dateStr; });
                             if (!attended) { if (!hitAttendance) consecutiveAbsences++; } else { hitAttendance = true; }
                         }
-                        if (worshipDates.length > 0) {
+                        if (worshipAsc.length > 0) {
                             if (consecutiveAbsences >= 8) list8.push(name);
                             else if (consecutiveAbsences >= 2 && consecutiveAbsences <= 7) list2_7.push(name);
                             else if (consecutiveAbsences === 1) list1.push(name);
@@ -914,13 +925,23 @@
             }
         }
 
-        function openModal(name, dist, dateStr) {
+        function openModal(name, dist, dateStr, currentScore = 0) {
             pendingName = name; pendingDist = dist; pendingDate = dateStr;
             const parts = dateStr.split('-'); const dObj = new Date(parts[0], parts[1] - 1, parts[2]);
             const dayNames = currentLang === 'ES' ? ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'] : ['일','월','화','수','목','금','토'];
             document.getElementById('modal-name-text').innerText = name;
             document.getElementById('modal-dist-text').innerText = dist;
             document.getElementById('modal-date-text').innerText = `${parts[1]}/${parts[2]} (${dayNames[dObj.getDay()]})`;
+
+            // 현재 점수에 맞춰 라디오 버튼 자동 체크
+            if (currentScore === 1.0) {
+                document.getElementById('radio-score-1').checked = true;
+            } else if (currentScore === 0.5) {
+                document.getElementById('radio-score-05').checked = true;
+            } else {
+                document.getElementById('radio-score-1').checked = true;
+            }
+
             document.getElementById('modal-overlay').classList.remove('hidden');
         }
 
@@ -929,7 +950,7 @@
         async function submitModal() {
             closeModal(); document.getElementById('loading-indicator').classList.remove('hidden');
             const scoreVal = document.querySelector('input[name="att_score"]:checked').value;
-            const methodStr = scoreVal === "1.0" ? "Presencial" : "Alternativo";
+            const methodStr = scoreVal === "1.0" ? "Presencial" : (scoreVal === "0.5" ? "Alternativo" : "Ausente");
             try {
                 const response = await fetch(GAS_API_URL, {
                     method: "POST",
@@ -968,6 +989,8 @@
             document.getElementById('modal-opt1-sub').innerText = t.modalOpt1Sub; 
             document.getElementById('modal-opt2').innerText = t.modalOpt2;
             document.getElementById('modal-opt2-sub').innerText = t.modalOpt2Sub; 
+            document.getElementById('modal-opt3').innerText = t.modalOpt3;
+            document.getElementById('modal-opt3-sub').innerText = t.modalOpt3Sub; 
             document.getElementById('modal-btn-cancel').innerText = t.modalCancel;
             document.getElementById('modal-btn-save').innerText = t.modalSave;
         }
