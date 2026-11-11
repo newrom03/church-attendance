@@ -61,7 +61,7 @@
                     </div>
                     <div class="pt-3 border-t border-slate-100">
                         <div class="flex justify-between items-center mb-1">
-                            <p class="text-xs font-bold text-slate-500">📈 추이 (일요일)</p>
+                            <p class="text-xs font-bold text-slate-500" id="lbl-trend-sun">📈 추이 (일요일)</p>
                             <span class="text-[10px] text-indigo-600 font-bold" id="latest-sun-info">최근: -</span>
                         </div>
                         <div id="chart-sun-container" class="w-full h-20 pt-1"></div>
@@ -82,7 +82,7 @@
                     </div>
                     <div class="pt-3 border-t border-slate-100">
                         <div class="flex justify-between items-center mb-1">
-                            <p class="text-xs font-bold text-slate-500">📉 추이 (수요일)</p>
+                            <p class="text-xs font-bold text-slate-500" id="lbl-trend-wed">📉 추이 (수요일)</p>
                             <span class="text-[10px] text-sky-600 font-bold" id="latest-wed-info">최근: -</span>
                         </div>
                         <div id="chart-wed-container" class="w-full h-20 pt-1"></div>
@@ -90,10 +90,11 @@
                 </div>
             </div>
 
+            <!-- 결석 사유 분석 통계 카드 -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
                 <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                    <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base" id="txt-reason-dash-title">📋 결석 사유별 분석 및 통계 (전체)</h3>
-                    <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1 rounded-full" id="total-reason-count">총 제출: 0건</span>
+                    <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base" id="txt-reason-dash-title">📋 Motivos de Ausencia</h3>
+                    <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1 rounded-full" id="total-reason-count">Total: 0</span>
                 </div>
                 <div id="reason-stats-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
             </div>
@@ -136,15 +137,16 @@
                     <div class="text-center py-12 text-slate-400 text-sm" id="txt-no-dist-selected">Seleccione un distrito arriba.</div>
                 </div>
 
+                <!-- 구역별 결석 사유 입력 패널 -->
                 <div class="mt-8 pt-6 border-t border-slate-200 hidden" id="district-reason-section">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
                         <div>
-                            <h3 class="text-md font-bold text-slate-800 flex items-center gap-2">📝 구역원 결석 사유 입력 및 제출</h3>
-                            <p class="text-xs text-slate-500 mt-0.5">결석한 성도님들의 사유를 선택하고 저장하세요.</p>
+                            <h3 class="text-md font-bold text-slate-800 flex items-center gap-2" id="txt-reason-input-title">📝 Registrar Motivos de Ausencia</h3>
+                            <p class="text-xs text-slate-500 mt-0.5" id="txt-reason-input-sub">Seleccione y guarde el motivo de ausencia de los miembros.</p>
                         </div>
                         <div class="flex items-center gap-2 w-full sm:w-auto">
                             <select id="reason-date-selector" class="bg-slate-50 text-slate-700 text-xs font-semibold px-3 py-2 rounded-lg border border-slate-200 focus:outline-none"></select>
-                            <button onclick="saveAllDistrictReasons()" class="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition">사유 일괄 저장 ✨</button>
+                            <button onclick="saveAllDistrictReasons()" class="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition" id="btn-save-reasons">Guardar Motivos ✨</button>
                         </div>
                     </div>
                     <div id="district-absent-list-container" class="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200"></div>
@@ -204,40 +206,56 @@
         let absenceReasons = [];
         let pendingName = ''; let pendingDist = ''; let pendingDate = '';
 
-        const reasonList = [
-            "1. 건강 / 질병", "2. 직장 / 학업", "3. 가족 / 가정", "4. 교통 / 거리", "5. 경제적 문제",
-            "6. 개인 일정", "7. 신앙적 어려움", "8. 공동체 및 관계 문제", "9. 사전 연락 없는 결석", "10. 기타"
-        ];
-
         const dict = {
             'ES': {
                 'headerTitle': '📊 Panel de Control', 'headerSub': 'Análisis de asistencia y gestión de ausencias',
                 'tabDash': 'Resumen General', 'tabDist': 'Detalle por Distrito',
                 'avgSun': 'Promedio Asistencia (Domingo)', 'avgWed': 'Promedio Asistencia (Miércoles)',
                 'avgSub': '* Sólo miembros registrados',
+                'lblTrendSun': '📈 Tendencia (Domingo)', 'lblTrendWed': '📉 Tendencia (Miércoles)',
                 'titleSun': '📈 Domingo: Tendencia', 'titleWed': '📉 Miércoles: Tendencia',
                 'titleEdu': '📚 Educación y Reuniones',
                 'titleAbs': '🚨 Gestión de Ausencias (Toda la Iglesia)', 'colDist': 'Distrito', 'colAtt': 'Asist.',
                 'colAbs': 'Ausen.', 'colTrend': 'Tendencia', 'colTue': 'Mar', 'colThu': 'Jue', 'colSat': 'Sáb',
                 'trendUp': 'más', 'trendDown': 'menos', 'trendSame': 'Igual',
-                'abs1': 'Ausencia (1 vez)', 'abs1Sub': 'Control: Iglesia',
+                'abs1': 'Ausencia (1 vez)', 'abs1Sub': 'Control: Iglesia (Último culto)',
                 'abs2_7': 'Ausencia Continua (2~7 veces)', 'abs2_7Sub': 'Control: Tribu',
                 'abs8': 'Ausencia Larga (8+ veces)', 'abs8Sub': 'Control: General',
                 'noData': 'Sin datos', 'titleDistDetail': '📋 Matriz Detallada por Distrito',
                 'subDistDetail': 'Haga clic en [✗ 0] para corregir asistencia.',
                 'selectDistDef': 'Seleccione un distrito', 'noDistSelected': 'Seleccione un distrito arriba.',
                 'colName': 'Nombre', 'colSunCount': 'Dom(명)', 'colWedCount': 'Mié(명)', 'colScore': 'Pt',
-                'titleDistAbs': '🚨 Lista de Ausencias (Distrito)', 'unregLabel': '--- No Registrados (Excluidos de estadísticas) ---',
+                'titleDistAbs': '🚨 Lista de Ausencias (Distrito Actual)', 'unregLabel': '--- No Registrados (Excluidos de estadísticas) ---',
                 'totalLabel': 'TOTAL',
                 'modalTitle': 'Asistencia Manual', 'modalOpt1': 'Asistencia Normal (1 pt)', 'modalOpt1Sub': 'Asistió el día correspondiente',
                 'modalOpt2': 'Día Alternativo (0.5 pts)', 'modalOpt2Sub': 'Recuperación en otro día',
-                'modalCancel': 'Cancelar', 'modalSave': 'Guardar ✨'
+                'modalCancel': 'Cancelar', 'modalSave': 'Guardar ✨',
+                'reasonDashTitle': '📋 Motivos de Ausencia (Toda la Iglesia)',
+                'reasonTotalPrefix': 'Total enviados: ',
+                'cases': 'casos',
+                'reasonInputTitle': '📝 Registrar Motivos de Ausencia',
+                'reasonInputSub': 'Seleccione y guarde el motivo de ausencia de los miembros.',
+                'btnSaveReasons': 'Guardar Motivos ✨',
+                'noAbsentsMsg': 'No hay ausencias en este culto. ¡Excelente! 🎉',
+                'reasons': [
+                    "1. Salud / Enfermedad",
+                    "2. Trabajo / Estudios",
+                    "3. Familia / Hogar",
+                    "4. Transporte / Distancia",
+                    "5. Problemas Económicos",
+                    "6. Compromiso Personal",
+                    "7. Dificultad Espiritual",
+                    "8. Problemas de Relación Comunitaria",
+                    "9. Ausencia sin Previo Aviso",
+                    "10. Otros"
+                ]
             },
             'KO': {
                 'headerTitle': '📊 관리자 통합 대시보드', 'headerSub': '교회 전체 예배 참석 및 결석자 추적',
                 'tabDash': '종합 대시보드', 'tabDist': '구역별 상세 매트릭스',
                 'avgSun': '일요일 예배 평균 출석', 'avgWed': '수요일 예배 평균 출석',
                 'avgSub': '* 공식 등록 성도 기준',
+                'lblTrendSun': '📈 추이 (일요일)', 'lblTrendWed': '📉 추이 (수요일)',
                 'titleSun': '📈 일요일: 구역별 출석 트렌드', 'titleWed': '📉 수요일: 구역별 출석 트렌드',
                 'titleEdu': '📚 화/목/토 교육 모임',
                 'titleAbs': '🚨 예배 결석 통합 관리 명단 (교회 전체)', 'colDist': '구역명', 'colAtt': '출석',
@@ -254,11 +272,36 @@
                 'totalLabel': 'TOTAL (총합)',
                 'modalTitle': '수동 출석 입력', 'modalOpt1': '정상 참석 (1점)', 'modalOpt1Sub': '해당 예배에 정상적으로 참석함',
                 'modalOpt2': '대체 출석 (0.5점)', 'modalOpt2Sub': '다른 요일에 보강 참석함',
-                'modalCancel': '취소', 'modalSave': '출석 저장 ✨'
+                'modalCancel': '취소', 'modalSave': '출석 저장 ✨',
+                'reasonDashTitle': '📋 결석 사유별 분석 및 통계 (전체)',
+                'reasonTotalPrefix': '총 제출: ',
+                'cases': '건',
+                'reasonInputTitle': '📝 구역원 결석 사유 입력 및 제출',
+                'reasonInputSub': '결석한 성도님들의 사유를 선택하고 저장하세요.',
+                'btnSaveReasons': '사유 일괄 저장 ✨',
+                'noAbsentsMsg': '해당 예배에 결석한 등록 성도가 없습니다. 완벽합니다! 🎉',
+                'reasons': [
+                    "1. 건강 / 질병",
+                    "2. 직장 / 학업",
+                    "3. 가족 / 가정",
+                    "4. 교통 / 거리",
+                    "5. 경제적 문제",
+                    "6. 개인 일정",
+                    "7. 신앙적 어려움",
+                    "8. 공동체 및 관계 문제",
+                    "9. 사전 연락 없는 결석",
+                    "10. 기타"
+                ]
             }
         };
 
         window.addEventListener('DOMContentLoaded', async () => { await loadData(false); });
+
+        function isUnregHeader(name) {
+            if (!name) return true;
+            const clean = name.toString().trim().toLowerCase().replace(/\s+/g, '');
+            return clean === '[미등록]' || clean === '미등록' || clean === '[noregistrado]' || clean === 'noregistrado';
+        }
 
         async function loadData(keepState = false) {
             document.getElementById('loading-indicator').classList.remove('hidden');
@@ -268,9 +311,14 @@
                 districtData = {};
                 for (const dist in rawDistData) {
                     const val = rawDistData[dist];
-                    if (Array.isArray(val)) { districtData[dist] = { reg: val, unreg: [] }; }
-                    else if (val && typeof val === 'object') { districtData[dist] = { reg: val.reg || [], unreg: val.unreg || [] }; }
-                    else { districtData[dist] = { reg: [], unreg: [] }; }
+                    let rList = []; let uList = [];
+                    if (Array.isArray(val)) { rList = val; }
+                    else if (val && typeof val === 'object') { rList = val.reg || []; uList = val.unreg || []; }
+                    
+                    // [미등록] 구분자 헤더 제거
+                    rList = rList.filter(n => !isUnregHeader(n));
+                    uList = uList.filter(n => !isUnregHeader(n));
+                    districtData[dist] = { reg: rList, unreg: uList };
                 }
 
                 const resLogs = await fetch(GAS_API_URL + "?action=attendance");
@@ -552,12 +600,13 @@
             });
             eduHtml += `</tbody>`; document.getElementById('table-edu').innerHTML = eduHtml;
 
+            // 🚨 예배만(일요일=0, 수요일=3) 결석 명단에 반영
             const todayStr = new Date().toISOString().split('T')[0];
             const pastWorshipDates = [...sunDates, ...wedDates].filter(dStr => dStr <= todayStr).sort();
 
             const list1 = []; const list2_7 = []; const list8 = [];
             districtNames.forEach(dist => {
-                const members = districtData[dist].reg;
+                const members = districtData[dist].reg.filter(n => !isUnregHeader(n));
                 const normDist = normalizeStr(dist);
                 const distLogs = regMonthLogs.filter(log => normalizeStr(log.district) === normDist);
                 members.forEach(name => {
@@ -584,10 +633,15 @@
             `;
         }
 
+        // 결석 사유 통계 다국어 렌더링
         function renderReasonStatistics() {
             const container = document.getElementById('reason-stats-container');
             const totalCountEl = document.getElementById('total-reason-count');
+            const titleEl = document.getElementById('txt-reason-dash-title');
             if (!container) return;
+
+            const t = dict[currentLang];
+            if (titleEl) titleEl.innerText = t.reasonDashTitle;
 
             const selectedMonth = document.getElementById('month-selector').value;
             const monthReasons = absenceReasons.filter(r => {
@@ -596,29 +650,34 @@
                 return m === selectedMonth;
             });
 
-            totalCountEl.innerText = `총 제출: ${monthReasons.length}건`;
+            if (totalCountEl) {
+                totalCountEl.innerText = `${t.reasonTotalPrefix}${monthReasons.length} ${t.cases}`;
+            }
 
-            let counts = {};
-            reasonList.forEach(r => counts[r] = 0);
+            let counts = Array(10).fill(0);
             monthReasons.forEach(r => {
-                if (counts[r.reason] !== undefined) {
-                    counts[r.reason]++;
+                const reasonStr = r.reason || "";
+                const idxMatch = reasonStr.match(/^(\d+)\./);
+                if (idxMatch) {
+                    const idx = parseInt(idxMatch[1]) - 1;
+                    if (idx >= 0 && idx < 10) counts[idx]++;
+                    else counts[9]++;
                 } else {
-                    counts["10. 기타"] = (counts["10. 기타"] || 0) + 1;
+                    counts[9]++;
                 }
             });
 
             const total = monthReasons.length;
             let html = '';
 
-            reasonList.forEach(r => {
-                const cnt = counts[r] || 0;
+            t.reasons.forEach((rName, idx) => {
+                const cnt = counts[idx] || 0;
                 const pct = total > 0 ? Math.round((cnt / total) * 100) : 0;
                 html += `
                     <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1.5">
                         <div class="flex justify-between text-xs font-bold text-slate-700">
-                            <span>${r}</span>
-                            <span>${cnt}건 (${pct}%)</span>
+                            <span>${rName}</span>
+                            <span>${cnt} ${t.cases} (${pct}%)</span>
                         </div>
                         <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
                             <div class="bg-indigo-600 h-full rounded-full transition-all duration-500" style="width: ${pct}%;"></div>
@@ -665,13 +724,19 @@
             }
             const sortedDates = Array.from(dateSet).sort();
             
+            // 사유 선택용 날짜: 일요일(0)과 수요일(3) 정규 예배일만 추출
             const todayStr = new Date().toISOString().split('T')[0];
-            const pastDates = sortedDates.filter(d => d <= todayStr);
+            const worshipDates = sortedDates.filter(dateStr => {
+                const dObj = new Date(dateStr.split('-')[0], dateStr.split('-')[1] - 1, dateStr.split('-')[2]);
+                return (dObj.getDay() === 0 || dObj.getDay() === 3) && dateStr <= todayStr;
+            });
+
             const reasonDateSel = document.getElementById('reason-date-selector');
             const currentSelectedDate = reasonDateSel.value;
-            reasonDateSel.innerHTML = pastDates.map(d => `<option value="${d}" ${d === currentSelectedDate ? 'selected' : ''}>${d} 예배</option>`).join('');
-            if (!reasonDateSel.value && pastDates.length > 0) {
-                reasonDateSel.value = pastDates[pastDates.length - 1];
+            const cultoLabel = currentLang === 'ES' ? 'Culto' : '예배';
+            reasonDateSel.innerHTML = worshipDates.map(d => `<option value="${d}" ${d === currentSelectedDate ? 'selected' : ''}>${d} (${cultoLabel})</option>`).join('');
+            if (!reasonDateSel.value && worshipDates.length > 0) {
+                reasonDateSel.value = worshipDates[worshipDates.length - 1];
             }
 
             renderAbsentMembersForReason(selectedDist, reasonDateSel.value, distLogs);
@@ -680,17 +745,11 @@
                 renderAbsentMembersForReason(selectedDist, reasonDateSel.value, distLogs);
             };
 
-            const regMembers = districtData[selectedDist].reg || [];
-            const unregMembers = districtData[selectedDist].unreg || [];
+            // [미등록] 구분자 헤더 제거된 등록 및 미등록 성도 명단
+            const regMembers = (districtData[selectedDist].reg || []).filter(n => !isUnregHeader(n));
+            const unregMembers = (districtData[selectedDist].unreg || []).filter(n => !isUnregHeader(n));
 
             const dayNames = currentLang === 'ES' ? ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'] : ['일', '월', '화', '수', '목', '금', '토'];
-            const worshipDates = [];
-            sortedDates.forEach(dateStr => {
-                const dObj = new Date(dateStr.split('-')[0], dateStr.split('-')[1] - 1, dateStr.split('-')[2]);
-                if (dObj.getDay() === 0 || dObj.getDay() === 3) worshipDates.push(dateStr);
-            });
-
-            const pastWorshipDates = worshipDates.filter(dStr => dStr <= todayStr);
 
             let html = `<table class="w-full text-left border-collapse min-w-full"><thead><tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200"><th class="p-3.5 font-semibold sticky left-0 bg-slate-50 z-10">${t.colName}</th><th class="p-3.5 font-semibold text-center text-indigo-600">${t.colSunCount}</th><th class="p-3.5 font-semibold text-center text-sky-600">${t.colWedCount}</th><th class="p-3.5 font-semibold text-center">${t.colScore}</th>`;
             sortedDates.forEach(dateStr => {
@@ -735,14 +794,15 @@
                     });
                     html += `</tr>`;
 
+                    // 결석 명단은 등록 성도만 + 정규 예배(일/수)만 판정
                     if(!isUnregSection) {
                         let consecutiveAbsences = 0; let hitAttendance = false;
-                        for (let i = pastWorshipDates.length - 1; i >= 0; i--) {
-                            const dateStr = pastWorshipDates[i];
+                        for (let i = worshipDates.length - 1; i >= 0; i--) {
+                            const dateStr = worshipDates[i];
                             const attended = userLogs.some(log => { const d = new Date(log.timestamp); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` === dateStr; });
                             if (!attended) { if (!hitAttendance) consecutiveAbsences++; } else { hitAttendance = true; }
                         }
-                        if (pastWorshipDates.length > 0) {
+                        if (worshipDates.length > 0) {
                             if (consecutiveAbsences >= 8) list8.push(name);
                             else if (consecutiveAbsences >= 2 && consecutiveAbsences <= 7) list2_7.push(name);
                             else if (consecutiveAbsences === 1) list1.push(name);
@@ -769,11 +829,14 @@
             `;
         }
 
+        // 결석 사유 입력 리스트 렌더링 (등록 성도만, [미등록] 헤더 제외)
         function renderAbsentMembersForReason(district, dateStr, distLogs) {
             const container = document.getElementById('district-absent-list-container');
             if (!container || !dateStr) return;
 
-            const regMembers = districtData[district]?.reg || [];
+            const t = dict[currentLang];
+            const regMembers = (districtData[district]?.reg || []).filter(n => !isUnregHeader(n));
+            
             const absentMembers = regMembers.filter(name => {
                 const normName = normalizeStr(name);
                 return !distLogs.some(log => {
@@ -785,20 +848,24 @@
             });
 
             if (absentMembers.length === 0) {
-                container.innerHTML = `<div class="text-center py-6 text-slate-400 text-xs italic">해당 날짜에 결석한 등록 성도가 없습니다. 완벽합니다! 🎉</div>`;
+                container.innerHTML = `<div class="text-center py-6 text-slate-400 text-xs italic">${t.noAbsentsMsg}</div>`;
                 return;
             }
 
             let html = '';
             absentMembers.forEach(name => {
                 const existing = absenceReasons.find(r => r.date === dateStr && r.district === district && r.name === name);
-                const currentReason = existing ? existing.reason : reasonList[0];
+                let currentIdx = 0;
+                if (existing && existing.reason) {
+                    const match = existing.reason.match(/^(\d+)\./);
+                    if (match) currentIdx = parseInt(match[1]) - 1;
+                }
 
                 html += `
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3 rounded-lg border border-slate-200 gap-2" data-absent-name="${name}">
                         <span class="font-bold text-slate-700 text-sm">• ${name}</span>
                         <select class="absent-reason-select bg-slate-50 text-slate-700 text-xs font-semibold px-3 py-2 rounded-lg border border-slate-200 focus:outline-none w-full sm:w-72">
-                            ${reasonList.map(r => `<option value="${r}" ${r === currentReason ? 'selected' : ''}>${r}</option>`).join('')}
+                            ${t.reasons.map((r, idx) => `<option value="${idx+1}. ${r.replace(/^\d+\.\s*/, '')}" ${idx === currentIdx ? 'selected' : ''}>${r}</option>`).join('')}
                         </select>
                     </div>
                 `;
@@ -830,9 +897,9 @@
                 const res = await fetch(GAS_API_URL + "?action=reasons");
                 absenceReasons = await res.json();
 
-                alert("결석 사유가 성공적으로 저장되었습니다! ✨");
+                alert(currentLang === 'ES' ? '¡Motivos de ausencia guardados con éxito! ✨' : '결석 사유가 성공적으로 저장되었습니다! ✨');
             } catch (e) {
-                alert("저장 중 오류가 발생했습니다.");
+                alert(currentLang === 'ES' ? 'Error al guardar motivos.' : '저장 중 오류가 발생했습니다.');
             } finally {
                 document.getElementById('loading-indicator').classList.add('hidden');
             }
@@ -867,17 +934,32 @@
 
         function applyTranslations() {
             const t = dict[currentLang];
-            document.getElementById('txt-header-title').innerText = t.headerTitle; document.getElementById('txt-header-sub').innerText = t.headerSub;
-            document.getElementById('btn-tab-dash').innerText = t.tabDash; document.getElementById('btn-tab-dist').innerText = t.tabDist;
-            document.getElementById('txt-avg-sun').innerText = t.avgSun; document.getElementById('txt-avg-sub1').innerText = t.avgSub;
-            document.getElementById('txt-avg-wed').innerText = t.avgWed; document.getElementById('txt-avg-sub2').innerText = t.avgSub;
-            document.getElementById('txt-title-edu').innerText = t.titleEdu; document.getElementById('txt-title-abs').innerText = t.titleAbs;
-            document.getElementById('txt-title-dist-detail').innerText = t.titleDistDetail; document.getElementById('txt-sub-dist-detail').innerText = t.subDistDetail;
+            document.getElementById('txt-header-title').innerText = t.headerTitle; 
+            document.getElementById('txt-header-sub').innerText = t.headerSub;
+            document.getElementById('btn-tab-dash').innerText = t.tabDash; 
+            document.getElementById('btn-tab-dist').innerText = t.tabDist;
+            document.getElementById('txt-avg-sun').innerText = t.avgSun; 
+            document.getElementById('txt-avg-sub1').innerText = t.avgSub;
+            document.getElementById('txt-avg-wed').innerText = t.avgWed; 
+            document.getElementById('txt-avg-sub2').innerText = t.avgSub;
+            const lblSun = document.getElementById('lbl-trend-sun'); if (lblSun) lblSun.innerText = t.lblTrendSun;
+            const lblWed = document.getElementById('lbl-trend-wed'); if (lblWed) lblWed.innerText = t.lblTrendWed;
+            document.getElementById('txt-title-edu').innerText = t.titleEdu; 
+            document.getElementById('txt-title-abs').innerText = t.titleAbs;
+            document.getElementById('txt-title-dist-detail').innerText = t.titleDistDetail; 
+            document.getElementById('txt-sub-dist-detail').innerText = t.subDistDetail;
             const noDistEl = document.getElementById('txt-no-dist-selected'); if(noDistEl) noDistEl.innerText = t.noDistSelected;
             const distAbsTitle = document.getElementById('txt-title-dist-abs'); if (distAbsTitle) distAbsTitle.innerHTML = `🚨 ${t.titleDistAbs}`;
-            document.getElementById('modal-title').innerText = t.modalTitle; document.getElementById('modal-opt1').innerText = t.modalOpt1;
-            document.getElementById('modal-opt1-sub').innerText = t.modalOpt1Sub; document.getElementById('modal-opt2').innerText = t.modalOpt2;
-            document.getElementById('modal-opt2-sub').innerText = t.modalOpt2Sub; document.getElementById('modal-btn-cancel').innerText = t.modalCancel;
+            const reasonTitle = document.getElementById('txt-reason-dash-title'); if (reasonTitle) reasonTitle.innerText = t.reasonDashTitle;
+            const reasonInTitle = document.getElementById('txt-reason-input-title'); if (reasonInTitle) reasonInTitle.innerText = t.reasonInputTitle;
+            const reasonInSub = document.getElementById('txt-reason-input-sub'); if (reasonInSub) reasonInSub.innerText = t.reasonInputSub;
+            const btnSave = document.getElementById('btn-save-reasons'); if (btnSave) btnSave.innerText = t.btnSaveReasons;
+            document.getElementById('modal-title').innerText = t.modalTitle; 
+            document.getElementById('modal-opt1').innerText = t.modalOpt1;
+            document.getElementById('modal-opt1-sub').innerText = t.modalOpt1Sub; 
+            document.getElementById('modal-opt2').innerText = t.modalOpt2;
+            document.getElementById('modal-opt2-sub').innerText = t.modalOpt2Sub; 
+            document.getElementById('modal-btn-cancel').innerText = t.modalCancel;
             document.getElementById('modal-btn-save').innerText = t.modalSave;
         }
     </script>
