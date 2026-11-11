@@ -90,7 +90,6 @@
                 </div>
             </div>
 
-            <!-- 결석 사유 분석 통계 카드 -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
                 <div class="flex justify-between items-center border-b border-slate-100 pb-3">
                     <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base" id="txt-reason-dash-title">📋 Motivos de Ausencia</h3>
@@ -137,7 +136,6 @@
                     <div class="text-center py-12 text-slate-400 text-sm" id="txt-no-dist-selected">Seleccione un distrito arriba.</div>
                 </div>
 
-                <!-- 구역별 결석 사유 입력 패널 -->
                 <div class="mt-8 pt-6 border-t border-slate-200 hidden" id="district-reason-section">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
                         <div>
@@ -303,6 +301,22 @@
             return clean === '[미등록]' || clean === '미등록' || clean === '[noregistrado]' || clean === 'noregistrado';
         }
 
+        // 일~화(0,1,2): 직전 일요일까지 / 수~토(3,4,5,6): 당주 수요일까지 유효 날짜 판정
+        function getMaxValidWorshipDate() {
+            const now = new Date();
+            const day = now.getDay(); // 0:일, 1:월, 2:화, 3:수, 4:목, 5:금, 6:토
+            let target = new Date(now);
+            
+            if (day >= 0 && day <= 2) {
+                // 일~화: 이번 주(혹은 오늘) 일요일 날짜 구하기
+                target.setDate(now.getDate() - day);
+            } else {
+                // 수~토: 이번 주 수요일 날짜 구하기
+                target.setDate(now.getDate() - (day - 3));
+            }
+            return `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, '0')}-${String(target.getDate()).padStart(2, '0')}`;
+        }
+
         async function loadData(keepState = false) {
             document.getElementById('loading-indicator').classList.remove('hidden');
             try {
@@ -315,7 +329,6 @@
                     if (Array.isArray(val)) { rList = val; }
                     else if (val && typeof val === 'object') { rList = val.reg || []; uList = val.unreg || []; }
                     
-                    // [미등록] 구분자 헤더 제거
                     rList = rList.filter(n => !isUnregHeader(n));
                     uList = uList.filter(n => !isUnregHeader(n));
                     districtData[dist] = { reg: rList, unreg: uList };
@@ -600,9 +613,9 @@
             });
             eduHtml += `</tbody>`; document.getElementById('table-edu').innerHTML = eduHtml;
 
-            // 🚨 예배만(일요일=0, 수요일=3) 결석 명단에 반영
-            const todayStr = new Date().toISOString().split('T')[0];
-            const pastWorshipDates = [...sunDates, ...wedDates].filter(dStr => dStr <= todayStr).sort();
+            // 🚨 일~화요일은 직전 일요일까지만, 수~토요일은 수요일까지만 결석 판정
+            const maxValidDate = getMaxValidWorshipDate();
+            const pastWorshipDates = [...sunDates, ...wedDates].filter(dStr => dStr <= maxValidDate).sort();
 
             const list1 = []; const list2_7 = []; const list8 = [];
             districtNames.forEach(dist => {
@@ -633,7 +646,6 @@
             `;
         }
 
-        // 결석 사유 통계 다국어 렌더링
         function renderReasonStatistics() {
             const container = document.getElementById('reason-stats-container');
             const totalCountEl = document.getElementById('total-reason-count');
@@ -724,11 +736,11 @@
             }
             const sortedDates = Array.from(dateSet).sort();
             
-            // 사유 선택용 날짜: 일요일(0)과 수요일(3) 정규 예배일만 추출
-            const todayStr = new Date().toISOString().split('T')[0];
+            // 일~화: 직전 일요일까지 / 수~토: 당주 수요일까지
+            const maxValidDate = getMaxValidWorshipDate();
             const worshipDates = sortedDates.filter(dateStr => {
                 const dObj = new Date(dateStr.split('-')[0], dateStr.split('-')[1] - 1, dateStr.split('-')[2]);
-                return (dObj.getDay() === 0 || dObj.getDay() === 3) && dateStr <= todayStr;
+                return (dObj.getDay() === 0 || dObj.getDay() === 3) && dateStr <= maxValidDate;
             });
 
             const reasonDateSel = document.getElementById('reason-date-selector');
@@ -745,7 +757,6 @@
                 renderAbsentMembersForReason(selectedDist, reasonDateSel.value, distLogs);
             };
 
-            // [미등록] 구분자 헤더 제거된 등록 및 미등록 성도 명단
             const regMembers = (districtData[selectedDist].reg || []).filter(n => !isUnregHeader(n));
             const unregMembers = (districtData[selectedDist].unreg || []).filter(n => !isUnregHeader(n));
 
@@ -794,7 +805,6 @@
                     });
                     html += `</tr>`;
 
-                    // 결석 명단은 등록 성도만 + 정규 예배(일/수)만 판정
                     if(!isUnregSection) {
                         let consecutiveAbsences = 0; let hitAttendance = false;
                         for (let i = worshipDates.length - 1; i >= 0; i--) {
@@ -829,7 +839,6 @@
             `;
         }
 
-        // 결석 사유 입력 리스트 렌더링 (등록 성도만, [미등록] 헤더 제외)
         function renderAbsentMembersForReason(district, dateStr, distLogs) {
             const container = document.getElementById('district-absent-list-container');
             if (!container || !dateStr) return;
