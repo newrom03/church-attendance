@@ -90,25 +90,12 @@
                 </div>
             </div>
 
-            <!-- 1. 예배별 결석 사유 분석 카드 (가까운 일/수 기본 + 이전 예배 선택) -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-3">
-                    <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base" id="txt-reason-culto-title">📋 Motivos de Ausencia (Por Culto)</h3>
-                    <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-                        <select id="dash-reason-date-selector" onchange="renderCultoReasonStats()" class="bg-slate-50 text-slate-700 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
-                        <span class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-full whitespace-nowrap" id="culto-reason-count">Total: 0</span>
-                    </div>
-                </div>
-                <div id="culto-reason-stats-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-            </div>
-
-            <!-- 2. 한 달간 결석 사유 누적 비율 카드 -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
                 <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                    <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base" id="txt-reason-month-title">📊 Acumulado Mensual de Motivos de Ausencia (%)</h3>
-                    <span class="text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full" id="month-reason-count">Total: 0</span>
+                    <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base" id="txt-reason-dash-title">📋 Motivos de Ausencia</h3>
+                    <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1 rounded-full" id="total-reason-count">Total: 0</span>
                 </div>
-                <div id="month-reason-stats-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                <div id="reason-stats-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -250,9 +237,8 @@
                 'modalOpt2': 'Día Alternativo / Tardanza (0.5 pts)', 'modalOpt2Sub': 'Recuperación en otro día',
                 'modalOpt3': 'Marcar como Ausente (0 pt / Eliminar)', 'modalOpt3Sub': 'Cancela la asistencia registrada',
                 'modalCancel': 'Cancelar', 'modalSave': 'Guardar ✨',
-                'reasonCultoTitle': '📋 Motivos de Ausencia (Por Culto)',
-                'reasonMonthTitle': '📊 Acumulado Mensual de Motivos de Ausencia (%)',
-                'reasonTotalPrefix': 'Total: ',
+                'reasonDashTitle': '📋 Motivos de Ausencia (Toda la Iglesia)',
+                'reasonTotalPrefix': 'Total enviados: ',
                 'cases': 'casos',
                 'reasonInputTitle': '📝 Registrar Motivos de Ausencia',
                 'reasonInputSub': 'Seleccione y guarde el motivo de ausencia de los miembros.',
@@ -295,8 +281,7 @@
                 'modalOpt2': '대체 출석 / 지각 (0.5점)', 'modalOpt2Sub': '다른 요일에 보강 참석함',
                 'modalOpt3': '결석 처리 (0점 / 기록 삭제)', 'modalOpt3Sub': '등록된 출석 기록을 삭제하고 결석으로 변경합니다',
                 'modalCancel': '취소', 'modalSave': '출석 저장 ✨',
-                'reasonCultoTitle': '📋 결석 사유별 분석 (예배 회차별)',
-                'reasonMonthTitle': '📊 한 달간 결석 사유 누적 비율 (%)',
+                'reasonDashTitle': '📋 결석 사유별 분석 및 통계 (전체)',
                 'reasonTotalPrefix': '총 제출: ',
                 'cases': '건',
                 'reasonInputTitle': '📝 구역원 결석 사유 입력 및 제출',
@@ -334,6 +319,7 @@
                    clean === 'lider';
         }
 
+        // 일~화(0,1,2): 직전 일요일까지 / 수~토(3,4,5,6): 당주 수요일까지 유효 날짜 판정
         function getMaxValidWorshipDate() {
             const now = new Date();
             const day = now.getDay();
@@ -359,6 +345,7 @@
                     if (Array.isArray(val)) { rList = val; }
                     else if (val && typeof val === 'object') { rList = val.reg || []; uList = val.unreg || []; }
                     
+                    // 전 구역 중복 이름 및 헤더/공백 엄격 필터링
                     rList = [...new Set(rList.map(n => String(n).trim()))].filter(n => !isUnregHeader(n));
                     uList = [...new Set(uList.map(n => String(n).trim()))].filter(n => !isUnregHeader(n));
                     districtData[dist] = { reg: rList, unreg: uList };
@@ -449,6 +436,21 @@
             </div>
         `;
 
+        // 전 구역 공통: 중복 제출 행을 제거하고 실제 고유 출석 성도 수만 계산
+        function getUniqueAttCount(logs, dStr, dayNum = null) {
+            const uniqueMembers = new Set();
+            logs.forEach(log => {
+                if (!log.timestamp) return;
+                const d = new Date(log.timestamp);
+                if (dayNum !== null && d.getDay() !== dayNum) return;
+                const logDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                if (logDateStr === dStr) {
+                    uniqueMembers.add(`${normalizeStr(log.district)}_${normalizeStr(log.name)}`);
+                }
+            });
+            return uniqueMembers.size;
+        }
+
         function renderDashboardView() {
             const selectedMonth = document.getElementById('month-selector').value;
             const regMonthLogs = attendanceLogs.filter(log => {
@@ -483,10 +485,7 @@
                 if (datesArr.length === 0) return 0;
                 let totalAtt = 0;
                 datesArr.forEach(dateStr => {
-                    totalAtt += regMonthLogs.filter(log => {
-                        const d = new Date(log.timestamp);
-                        return d.getDay() === dayNum && `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` === dateStr;
-                    }).length;
+                    totalAtt += getUniqueAttCount(regMonthLogs, dateStr, dayNum);
                 });
                 return Math.round(totalAtt / datesArr.length);
             };
@@ -504,10 +503,7 @@
             if (valWedEl) valWedEl.innerText = avgWed;
             if (valWedPctEl) valWedPctEl.innerText = totalRegisteredCount > 0 ? `${Math.round((avgWed / totalRegisteredCount) * 100)}%` : '0%';
 
-            // 대시보드 결석 사유 드롭다운 세팅 및 두 그래프(회차별 / 월간 누적) 렌더링
-            setupDashReasonSelector(selectedMonth);
-            renderCultoReasonStats();
-            renderMonthlyReasonStats();
+            renderReasonStatistics();
 
             const renderSvgLineChart = (containerId, datesArr, dayNum, infoSpanId, lineColor) => {
                 const container = document.getElementById(containerId);
@@ -522,10 +518,7 @@
                 }
 
                 let counts = datesArr.map(dStr => {
-                    const cnt = regMonthLogs.filter(log => {
-                        const d = new Date(log.timestamp);
-                        return d.getDay() === dayNum && `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` === dStr;
-                    }).length;
+                    const cnt = getUniqueAttCount(regMonthLogs, dStr, dayNum);
                     const p = dStr.split('-');
                     return { date: dStr, label: `${p[1]}/${p[2]}`, count: cnt };
                 });
@@ -610,9 +603,12 @@
                 let sumAtt = 0; let sumAbs = 0;
 
                 districtNames.forEach(dist => {
-                    const normDist = normalizeStr(dist); const totalMembers = districtData[dist].reg.length;
+                    const normDist = normalizeStr(dist); 
+                    const totalMembers = districtData[dist].reg.length;
                     const distLogs = regMonthLogs.filter(log => normalizeStr(log.district) === normDist);
-                    const getAttCount = (dStr) => distLogs.filter(log => { const d = new Date(log.timestamp); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` === dStr; }).length;
+                    
+                    // 전 구역 중복 제출 제거하여 정확한 고유 출석 인원 산출
+                    const getAttCount = (dStr) => getUniqueAttCount(distLogs, dStr);
                     const latestAtt = getAttCount(latestDate); 
                     const latestAbs = Math.max(0, totalMembers - latestAtt);
                     
@@ -635,11 +631,22 @@
             renderTrendTable('table-sun', sunDates); 
             renderTrendTable('table-wed', wedDates);
 
+            // 화/목/토 교육 모임도 동일 날짜 중복 제출 제거하여 정확한 참여 인원 카운트
             let eduHtml = `<thead><tr class="bg-slate-100 text-slate-500 uppercase tracking-wider text-[11px]"><th class="p-3 font-bold">${t.colDist}</th><th class="p-3 font-bold text-center">${t.colTue}</th><th class="p-3 font-bold text-center">${t.colThu}</th><th class="p-3 font-bold text-center">${t.colSat}</th></tr></thead><tbody class="divide-y divide-slate-100">`;
             districtNames.forEach(dist => {
                 const normDist = normalizeStr(dist); const distLogs = regMonthLogs.filter(log => normalizeStr(log.district) === normDist);
-                const countByDay = (dayNum) => distLogs.filter(log => new Date(log.timestamp).getDay() === dayNum).length;
-                const cTue = countByDay(2); const cThu = countByDay(4); const cSat = countByDay(6);
+                const countUniqueByDay = (dayNum) => {
+                    const uniqueDayRecords = new Set();
+                    distLogs.forEach(log => {
+                        const d = new Date(log.timestamp);
+                        if (d.getDay() === dayNum) {
+                            const dStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                            uniqueDayRecords.add(`${dStr}_${normalizeStr(log.name)}`);
+                        }
+                    });
+                    return uniqueDayRecords.size;
+                };
+                const cTue = countUniqueByDay(2); const cThu = countUniqueByDay(4); const cSat = countUniqueByDay(6);
                 if(cTue > 0 || cThu > 0 || cSat > 0) {
                     eduHtml += `<tr class="hover:bg-slate-50/50"><td class="p-3 font-semibold text-slate-700">${dist}</td><td class="p-3 text-center ${cTue>0?'font-bold text-indigo-600':'text-slate-300'}">${cTue||'-'}</td><td class="p-3 text-center ${cThu>0?'font-bold text-indigo-600':'text-slate-300'}">${cThu||'-'}</td><td class="p-3 text-center ${cSat>0?'font-bold text-indigo-600':'text-slate-300'}">${cSat||'-'}</td></tr>`;
                 }
@@ -678,53 +685,28 @@
             `;
         }
 
-        // 대시보드 상단 예배별 사유 드롭다운 세팅 (가까운 일/수 예배 기본 선택)
-        function setupDashReasonSelector(selectedMonthStr) {
-            const sel = document.getElementById('dash-reason-date-selector');
-            if (!sel) return;
+        function renderReasonStatistics() {
+            const container = document.getElementById('reason-stats-container');
+            const totalCountEl = document.getElementById('total-reason-count');
+            const titleEl = document.getElementById('txt-reason-dash-title');
+            if (!container) return;
 
-            const year = 2026;
-            const monthInt = parseInt(selectedMonthStr);
-            const daysInMonth = new Date(year, monthInt, 0).getDate();
-            const maxValidDate = getMaxValidWorshipDate();
-            const worshipDates = [];
-
-            for (let i = 1; i <= daysInMonth; i++) {
-                const dObj = new Date(year, monthInt - 1, i);
-                const day = dObj.getDay();
-                if (day === 0 || day === 3) {
-                    const dStr = `${year}-${String(monthInt).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-                    if (dStr <= maxValidDate) {
-                        worshipDates.push(dStr);
-                    }
-                }
-            }
-
-            // 최신순 정렬 (가까운 일/수 예배가 최상단)
-            worshipDates.reverse();
-
-            const prevVal = sel.value;
-            const dayLabels = currentLang === 'ES' ? { 0: 'Dom', 3: 'Mié' } : { 0: '일', 3: '수' };
-
-            sel.innerHTML = worshipDates.map(dStr => {
-                const p = dStr.split('-');
-                const dObj = new Date(p[0], p[1] - 1, p[2]);
-                const label = `${p[1]}/${p[2]} (${dayLabels[dObj.getDay()]})`;
-                return `<option value="${dStr}">${label}</option>`;
-            }).join('');
-
-            if (prevVal && worshipDates.includes(prevVal)) {
-                sel.value = prevVal;
-            } else if (worshipDates.length > 0) {
-                sel.value = worshipDates[0];
-            }
-        }
-
-        // 공통 바 그래프 생성 헬퍼
-        function buildReasonBarsHtml(reasonsSubset, barColorClass) {
             const t = dict[currentLang];
+            if (titleEl) titleEl.innerText = t.reasonDashTitle;
+
+            const selectedMonth = document.getElementById('month-selector').value;
+            const monthReasons = absenceReasons.filter(r => {
+                if (!r.date) return false;
+                const m = r.date.split('-')[1];
+                return m === selectedMonth;
+            });
+
+            if (totalCountEl) {
+                totalCountEl.innerText = `${t.reasonTotalPrefix}${monthReasons.length} ${t.cases}`;
+            }
+
             let counts = Array(10).fill(0);
-            reasonsSubset.forEach(r => {
+            monthReasons.forEach(r => {
                 const reasonStr = r.reason || "";
                 const idxMatch = reasonStr.match(/^(\d+)\./);
                 if (idxMatch) {
@@ -736,7 +718,7 @@
                 }
             });
 
-            const total = reasonsSubset.length;
+            const total = monthReasons.length;
             let html = '';
 
             t.reasons.forEach((rName, idx) => {
@@ -749,57 +731,13 @@
                             <span>${cnt} ${t.cases} (${pct}%)</span>
                         </div>
                         <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
-                            <div class="${barColorClass} h-full rounded-full transition-all duration-500" style="width: ${pct}%;"></div>
+                            <div class="bg-indigo-600 h-full rounded-full transition-all duration-500" style="width: ${pct}%;"></div>
                         </div>
                     </div>
                 `;
             });
-            return html;
-        }
 
-        // 1) 예배 회차별 결석 사유 렌더링
-        function renderCultoReasonStats() {
-            const container = document.getElementById('culto-reason-stats-container');
-            const countEl = document.getElementById('culto-reason-count');
-            const titleEl = document.getElementById('txt-reason-culto-title');
-            const sel = document.getElementById('dash-reason-date-selector');
-            if (!container || !sel) return;
-
-            const t = dict[currentLang];
-            if (titleEl) titleEl.innerText = t.reasonCultoTitle;
-
-            const targetDate = sel.value;
-            const cultoReasons = absenceReasons.filter(r => r.date === targetDate);
-
-            if (countEl) {
-                countEl.innerText = `${t.reasonTotalPrefix}${cultoReasons.length} ${t.cases}`;
-            }
-
-            container.innerHTML = buildReasonBarsHtml(cultoReasons, 'bg-indigo-600');
-        }
-
-        // 2) 월간 전체 누적 결석 사유 비율 렌더링
-        function renderMonthlyReasonStats() {
-            const container = document.getElementById('month-reason-stats-container');
-            const countEl = document.getElementById('month-reason-count');
-            const titleEl = document.getElementById('txt-reason-month-title');
-            if (!container) return;
-
-            const t = dict[currentLang];
-            if (titleEl) titleEl.innerText = t.reasonMonthTitle;
-
-            const selectedMonth = document.getElementById('month-selector').value;
-            const monthReasons = absenceReasons.filter(r => {
-                if (!r.date) return false;
-                const m = r.date.split('-')[1];
-                return m === selectedMonth;
-            });
-
-            if (countEl) {
-                countEl.innerText = `${t.reasonTotalPrefix}${monthReasons.length} ${t.cases}`;
-            }
-
-            container.innerHTML = buildReasonBarsHtml(monthReasons, 'bg-sky-500');
+            container.innerHTML = html;
         }
 
         function renderDistrictView() {
@@ -1070,8 +1008,7 @@
             document.getElementById('txt-sub-dist-detail').innerText = t.subDistDetail;
             const noDistEl = document.getElementById('txt-no-dist-selected'); if(noDistEl) noDistEl.innerText = t.noDistSelected;
             const distAbsTitle = document.getElementById('txt-title-dist-abs'); if (distAbsTitle) distAbsTitle.innerHTML = `🚨 ${t.titleDistAbs}`;
-            const reasonCultoTitle = document.getElementById('txt-reason-culto-title'); if (reasonCultoTitle) reasonCultoTitle.innerText = t.reasonCultoTitle;
-            const reasonMonthTitle = document.getElementById('txt-reason-month-title'); if (reasonMonthTitle) reasonMonthTitle.innerText = t.reasonMonthTitle;
+            const reasonTitle = document.getElementById('txt-reason-dash-title'); if (reasonTitle) reasonTitle.innerText = t.reasonDashTitle;
             const reasonInTitle = document.getElementById('txt-reason-input-title'); if (reasonInTitle) reasonInTitle.innerText = t.reasonInputTitle;
             const reasonInSub = document.getElementById('txt-reason-input-sub'); if (reasonInSub) reasonInSub.innerText = t.reasonInputSub;
             const btnSave = document.getElementById('btn-save-reasons'); if (btnSave) btnSave.innerText = t.btnSaveReasons;
